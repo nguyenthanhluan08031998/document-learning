@@ -20,3 +20,51 @@ img { max-width: 100%; }
 a.g-item { text-decoration: none; }
 @media (max-width: 760px) { .subnav a.cmpbtn { margin-left: 0; } }
 @media (max-width: 600px) { .groups-nav { overflow-x: auto; } .groups-nav a { padding: 7px 10px; white-space: nowrap; } }
+
+/* Responsive: app bar spans the full width, nav rows scroll sideways instead of wrapping */
+.appbar { margin-inline: calc(-1 * max(16px, env(safe-area-inset-left, 0px))); padding-inline: max(16px, env(safe-area-inset-left, 0px)); }
+.groups-nav, .subnav, nav.toc ol { scrollbar-width: none; }
+.groups-nav::-webkit-scrollbar, .subnav::-webkit-scrollbar, nav.toc ol::-webkit-scrollbar { display: none; }
+
+@media (max-width: 900px) {
+  /* Table of contents becomes one row of chips above the content */
+  nav.toc .label { margin-bottom: 6px; }
+  nav.toc ol { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; }
+  nav.toc li { flex: none; }
+  nav.toc a { white-space: nowrap; background: var(--surface); border: 1px solid var(--line); border-radius: 99px; padding: 5px 12px; gap: 6px; }
+}
+
+@media (max-width: 760px) {
+  .brand small { display: none; }
+  .subnav { flex-wrap: nowrap; overflow-x: auto; margin-top: 8px; }
+  .subnav a { white-space: nowrap; flex: none; padding: 8px 12px; }
+}
+
+@media (max-width: 600px) {
+  body { font-size: 14px; line-height: 1.6; }
+  .appbar-in { padding-block: 10px 0; }
+  .bar1 { gap: 10px; }
+  .bar1 + .spacer { height: 6px; }
+  .wrap { padding-block: 16px 48px; gap: 16px; }
+  header.hero { padding-bottom: 20px; margin-bottom: 24px; }
+  section { margin-bottom: 40px; }
+  h2 { font-size: 18px; gap: 8px; }
+  h3 { font-size: 15px; margin-top: 22px; }
+  .fig { padding: 12px; }
+  .tbl table { font-size: 13.5px; }
+  /* Tables with up to three columns fit the screen; wider ones keep sideways scrolling */
+  table { min-width: 0; }
+  table:has(th:nth-child(4)) { min-width: 520px; }
+  th, td { padding: 8px 10px; }
+  pre.code { font-size: 12px; padding: 12px; }
+  .note { font-size: 14px; }
+  .group { padding: 14px; }
+  .g-head { flex-wrap: wrap; }
+}
+
+/* Content uses the full window width instead of a centered reading column */
+.wrap, .appbar-in { max-width: none; }
+main, .wrap.single main { max-width: none; }
+p, .lede { max-width: none; }
+/* Diagrams are drawn 900 units wide; never scale them past their natural size */
+.fig svg { max-width: 900px; margin-inline: auto; }

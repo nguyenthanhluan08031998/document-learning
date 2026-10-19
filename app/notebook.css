@@ -11,6 +11,7 @@
   --warn:#9a6200; --warn-soft:#fbf0d9;
   --bad:#b3362c; --bad-soft:#fbe6e3;
   --new:#4a4fb0; --new-soft:#e9eafb;
+  --deploy:#2d6aa8; --deploy-soft:#e3edf8;
   --code-bg:#eef2f4;
   --f-display:"Be Vietnam Pro",system-ui,sans-serif;
   --f-body:"Be Vietnam Pro",system-ui,-apple-system,"Segoe UI",sans-serif;
@@ -20,16 +21,16 @@
   --bg:#0f1519;--surface:#161e24;--ink:#e3e9ed;--muted:#94a3ae;--line:#2a3640;
   --accent:#4fc0c4;--accent-soft:#163236;
   --ok:#73c27d;--ok-soft:#18301b;--warn:#e0aa4a;--warn-soft:#352812;
-  --bad:#f08478;--bad-soft:#3a1a17;--new:#9ea3f2;--new-soft:#22244a;--code-bg:#1d272e;
+  --bad:#f08478;--bad-soft:#3a1a17;--new:#9ea3f2;--new-soft:#22244a;--deploy:#7fb0ea;--deploy-soft:#1a2a3f;--code-bg:#1d272e;
   color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0f1519;--surface:#161e24;--ink:#e3e9ed;--muted:#94a3ae;--line:#2a3640;
   --accent:#4fc0c4;--accent-soft:#163236;
   --ok:#73c27d;--ok-soft:#18301b;--warn:#e0aa4a;--warn-soft:#352812;
-  --bad:#f08478;--bad-soft:#3a1a17;--new:#9ea3f2;--new-soft:#22244a;--code-bg:#1d272e;
+  --bad:#f08478;--bad-soft:#3a1a17;--new:#9ea3f2;--new-soft:#22244a;--deploy:#7fb0ea;--deploy-soft:#1a2a3f;--code-bg:#1d272e;
   color-scheme:dark}
 
-body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15.5px;line-height:1.65;
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14.5px;line-height:1.65;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 .wrap{max-width:1180px;margin:0 auto;display:grid;grid-template-columns:220px minmax(0,1fr);gap:48px;padding-block:40px 80px}
 nav.toc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 24px);align-self:start;font-size:13.5px}
@@ -42,7 +43,7 @@ main{min-width:0;max-width:780px}
 
 header.hero{padding-bottom:28px;border-bottom:1px solid var(--line);margin-bottom:36px}
 .eyebrow{font-family:var(--f-mono);font-size:12px;color:var(--accent);letter-spacing:.04em}
-h1{font-family:var(--f-display);font-weight:800;font-size:clamp(30px,5vw,44px);line-height:1.12;margin:10px 0 14px;text-wrap:balance;letter-spacing:-.02em}
+h1{font-family:var(--f-display);font-weight:800;font-size:clamp(24px,3vw,34px);line-height:1.12;margin:10px 0 14px;text-wrap:balance;letter-spacing:-.02em}
 .lede{color:var(--muted);max-width:62ch;margin:0}
 .tape{display:flex;gap:3px;margin-top:22px;overflow:hidden}
 .tape div{font-family:var(--f-mono);font-size:11px;padding:4px 7px;background:var(--surface);border:1px solid var(--line);border-radius:3px;color:var(--muted);flex:none}
@@ -50,9 +51,9 @@ h1{font-family:var(--f-display);font-weight:800;font-size:clamp(30px,5vw,44px);l
 .tape div.leo{border-style:dashed}
 
 section{scroll-margin-top:24px;margin-bottom:52px}
-h2{font-family:var(--f-display);font-weight:700;font-size:24px;line-height:1.25;margin:0 0 6px;text-wrap:balance;display:flex;gap:12px;align-items:baseline}
+h2{font-family:var(--f-display);font-weight:700;font-size:20px;line-height:1.25;margin:0 0 6px;text-wrap:balance;display:flex;gap:12px;align-items:baseline}
 h2 .n{font-family:var(--f-mono);font-size:14px;color:var(--accent);font-weight:600}
-h3{font-size:16.5px;font-weight:700;margin:28px 0 8px}
+h3{font-size:15.5px;font-weight:700;margin:28px 0 8px}
 p{margin:0 0 12px;max-width:68ch}
 .sub{color:var(--muted);margin-bottom:20px}
 code{font-family:var(--f-mono);font-size:.86em;background:var(--code-bg);padding:1px 5px;border-radius:4px;overflow-wrap:anywhere}
@@ -95,7 +96,7 @@ ol.steps .d{color:var(--muted);font-size:14.5px}
 .note b{font-weight:700}
 
 .tbl{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface);margin:12px 0}
-table{border-collapse:collapse;width:100%;font-size:14px;min-width:560px}
+table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:560px}
 th,td{text-align:left;padding:9px 12px;border-top:1px solid var(--line);vertical-align:top}
 thead th{border-top:none;font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;background:var(--code-bg)}
 td.m{font-family:var(--f-mono);font-size:12.5px;white-space:nowrap}
@@ -152,7 +153,7 @@ html{scroll-behavior:smooth}
 pre.code{font-family:var(--f-mono);font-size:12.5px;line-height:1.6;background:var(--code-bg);border:1px solid var(--line);
   border-radius:10px;padding:14px 16px;overflow-x:auto;margin:12px 0;min-width:0}
 pre.code code{background:none;padding:0;font-size:inherit}
-.cmp > pre.code{margin:0}
+.cmp > .code-wrap pre.code{margin:0}
 
 /* App header: group tabs on top, notebook tabs below */
 .appbar{border-bottom:1px solid var(--line);background:var(--surface)}
@@ -200,8 +201,10 @@ pre.code code{background:none;padding:0;font-size:inherit}
 .dot.design{background:var(--new)}
 .dot.conc{background:var(--bad)}
 .dot.ops{background:var(--ok)}
+.dot.deploy{background:var(--deploy)}
 .groups > .group:last-child:nth-child(odd){grid-column:1/-1}
 .subnav[data-group="ops"]{--grp:var(--ok)}
+.subnav[data-group="deploy"]{--grp:var(--deploy)}
 .g-ops .g-tag{background:var(--ok-soft);color:var(--ok)}
 .g-ops .g-item:hover{border-color:var(--ok)}
 .subnav[data-group="conc"]{--grp:var(--bad)}
@@ -224,14 +227,3 @@ a.plink:hover{text-decoration:underline}
 @media (max-width:1100px){.gsub{display:none}}
 @media (max-width:600px){.gsub{display:none} .groups-nav{width:100%} .groups-nav button{flex:1;justify-content:center;padding:7px 8px}}
 
-/* Code theme: One Dark, fixed in both light and dark page modes */
-:root{--cbg:#282c34;--cbd:#282c34;--cx:#abb2bf;--ck:#c678dd;--ct:#e5c07b;--cf:#61afef;--cs:#98c379;--cn:#d19a66;--cc:#7f848e;--ca:#e06c75}
-pre.code{background:var(--cbg);border-color:var(--cbd);color:var(--cx)}
-pre.code .k,pre.code .kd,pre.code .kn,pre.code .kr,pre.code .kp,pre.code .ow{color:var(--ck)}
-pre.code .kc,pre.code .m,pre.code .mi,pre.code .mf,pre.code .mh,pre.code .mo,pre.code .mb{color:var(--cn)}
-pre.code .kt,pre.code .nc,pre.code .nn,pre.code .nb,pre.code .bp{color:var(--ct)}
-pre.code .nf,pre.code .fm,pre.code .nd{color:var(--cf)}
-pre.code .s,pre.code .s1,pre.code .s2,pre.code .sb,pre.code .sd,pre.code .se,pre.code .sh,pre.code .sr,pre.code .ss,pre.code .sx,pre.code .sa,pre.code .dl{color:var(--cs)}
-pre.code .si{color:var(--ca)}
-pre.code .na,pre.code .nt,pre.code .nl,pre.code .nv,pre.code .vi{color:var(--ca)}
-pre.code .c,pre.code .c1,pre.code .cm,pre.code .cs,pre.code .ch,pre.code .cp,pre.code .cpf{color:var(--cc);font-style:italic}

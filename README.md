@@ -31,22 +31,25 @@ app/
   layout.tsx                 # khung trang, header, font
   page.tsx                   # trang Tổng quan  (/)
   [group]/[slug]/page.tsx    # mọi trang con     (/api/rest/, /messaging/kafka/, ...)
-  notebook.css               # giao diện chung, sơ đồ, theme code One Dark
+  notebook.css               # giao diện chung, sơ đồ
   globals.css                # phần riêng cho Next.js
 components/
   NotebookHeader.tsx         # thanh nhóm + tab con (client component)
-  NotebookContent.tsx        # render nội dung một trang (server component)
+  Code.tsx                   # khối code, tô màu lúc build bằng Shiki (One Dark)
 lib/
   notebook.ts                # danh sách nhóm, trang, route
-  content.ts                 # đọc nội dung lúc build
-content/pages/*.html         # nội dung từng trang: chữ, sơ đồ SVG, code đã tô màu
+content/
+  home.tsx                   # nội dung trang Tổng quan
+  <nhóm>/<slug>.tsx          # nội dung từng trang: chữ, sơ đồ SVG, code
+  index.ts                   # map "nhóm/slug" → component
 ```
 
 ### Thêm hoặc sửa một trang
 
-1. Sửa hoặc tạo file `content/pages/<nhóm>__<slug>.html`.
-2. Nếu là trang mới, khai báo trong `lib/notebook.ts`.
-3. Link sang trang khác viết dạng `href="{{BASE}}/design/oop#oop-static"` để tự thêm base path.
+1. Sửa hoặc tạo file `content/<nhóm>/<slug>.tsx`.
+2. Nếu là trang mới, khai báo trong `lib/notebook.ts` và `content/index.ts`.
+3. Link sang trang khác dùng `<Link href="/design/oop/#oop-static">` (base path được thêm tự động).
+4. Code mẫu viết trong `<Code lang="ts">{`...`}</Code>`.
 
 ## Deploy lên GitHub Pages
 

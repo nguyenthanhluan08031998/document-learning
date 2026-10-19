@@ -1,5 +1,3 @@
-import { NotebookContent } from "@/components/NotebookContent";
+import HomePage from "@/content/home";
 
-export default function HomePage() {
-  return <NotebookContent name="home" />;
-}
+export default HomePage;

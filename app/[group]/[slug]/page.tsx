@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { NotebookContent } from "@/components/NotebookContent";
+import { PAGES } from "@/content";
 import { allRoutes, findPage } from "@/lib/notebook";
 
 type Params = { group: string; slug: string };
@@ -19,6 +19,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
 
 export default async function NotebookPage({ params }: { params: Promise<Params> }) {
   const { group, slug } = await params;
-  if (!findPage(group, slug)) notFound();
-  return <NotebookContent name={`${group}__${slug}`} />;
+  const Page = PAGES[`${group}/${slug}`];
+  if (!Page) notFound();
+  return <Page />;
 }

@@ -1,6 +1,6 @@
 // Single source of truth for groups, pages and their routes
 
-export type GroupId = "api" | "messaging" | "design" | "concurrency" | "operations";
+export type GroupId = "api" | "messaging" | "design" | "concurrency" | "operations" | "deploy";
 
 export interface NotebookPage {
   slug: string;
@@ -14,7 +14,7 @@ export interface NotebookGroup {
   label: string;
   hint: string;
   /** CSS class suffix used for the coloured dot and active tab */
-  tone: "api" | "msg" | "design" | "conc" | "ops";
+  tone: "api" | "msg" | "design" | "conc" | "ops" | "deploy";
   pages: NotebookPage[];
 }
 
@@ -66,6 +66,13 @@ export const GROUPS: NotebookGroup[] = [
       { slug: "structured-logging", label: "Structured & context" },
       { slug: "build-logger", label: "Tự viết logger" },
       { slug: "observability", label: "Observability" },
+    ],
+  },
+  {
+    id: "deploy", label: "Triển khai", hint: "docker, ci/cd", tone: "deploy",
+    pages: [
+      { slug: "docker", label: "Docker" },
+      { slug: "cicd-ec2", label: "CI/CD lên EC2" },
     ],
   },
 ];
