@@ -1,0 +1,285 @@
+<div class="wrap">
+<nav class="toc" aria-label="Mục lục Clean Architecture">
+  <div class="label">Mục lục</div>
+  <ol>
+    <li><a href="#ca-layers"><span>01</span>Bốn vòng tròn</a></li>
+    <li><a href="#ca-rule"><span>02</span>Dependency Rule</a></li>
+    <li><a href="#ca-flow"><span>03</span>Luồng một request</a></li>
+    <li><a href="#ca-code"><span>04</span>Code mẫu TypeScript</a></li>
+    <li><a href="#ca-folder"><span>05</span>Cấu trúc thư mục</a></li>
+    <li><a href="#ca-family"><span>06</span>Hexagonal &amp; Onion</a></li>
+    <li><a href="#ca-when"><span>07</span>Khi nào dùng, lỗi hay gặp</a></li>
+  </ol>
+</nav>
+<main>
+<header class="hero">
+  <div class="eyebrow">clean architecture · ghi chú học tập</div>
+  <h1>Clean Architecture: nghiệp vụ ở giữa, framework ở rìa</h1>
+  <p class="lede">Kiến trúc do Robert C. Martin (Uncle Bob) tổng hợp. Ý chính: code nghiệp vụ không được biết gì về database, web framework hay message broker. Nhờ vậy đổi Postgres sang MongoDB, Express sang NestJS, REST sang gRPC mà không phải sửa logic, và test nghiệp vụ không cần khởi động gì cả.</p>
+  <div class="tape" aria-hidden="true"><div>frameworks</div><div>adapters</div><div>use cases</div><div class="hw">entities</div></div>
+</header>
+
+<section id="ca-layers">
+  <h2><span class="n">01</span>Bốn vòng tròn</h2>
+  <figure class="fig">
+    <div class="scroll">
+    <svg viewBox="0 0 900 420" role="img" aria-label="Bốn vòng tròn đồng tâm: Entities ở giữa, rồi Use Cases, Interface Adapters, Frameworks and Drivers ở ngoài cùng; mũi tên phụ thuộc hướng vào tâm">
+      <defs><marker id="cra" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/></marker></defs>
+      <circle cx="250" cy="214" r="196" style="fill:var(--code-bg);stroke:var(--muted);stroke-width:1.5"/>
+      <circle cx="250" cy="214" r="148" style="fill:var(--new-soft);stroke:var(--new);stroke-width:1.5"/>
+      <circle cx="250" cy="214" r="100" style="fill:var(--warn-soft);stroke:var(--warn);stroke-width:1.5"/>
+      <circle cx="250" cy="214" r="52" style="fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.5"/>
+      <text class="s-tb" x="250" y="40" text-anchor="middle" style="font-size:13px;fill:var(--muted)">Frameworks &amp; Drivers</text>
+      <text class="s-tb" x="250" y="88" text-anchor="middle" style="font-size:13px;fill:var(--new)">Interface Adapters</text>
+      <text class="s-tb" x="250" y="136" text-anchor="middle" style="font-size:13px;fill:var(--warn)">Use Cases</text>
+      <text class="s-tb" x="250" y="218" text-anchor="middle" style="font-size:13px;fill:var(--accent)">Entities</text>
+      <path class="s-ln" d="M80 120 L150 160" marker-end="url(#cra)"/>
+      <path class="s-ln" d="M420 120 L350 160" marker-end="url(#cra)"/>
+      <path class="s-ln" d="M80 310 L150 270" marker-end="url(#cra)"/>
+      <path class="s-ln" d="M420 310 L350 270" marker-end="url(#cra)"/>
+      <circle cx="500" cy="70" r="7" style="fill:var(--accent)"/>
+      <text class="s-tb" x="516" y="75">Entities</text>
+      <text class="s-tm" x="516" y="94">Order, Money, quy tắc nghiệp vụ</text>
+      <circle cx="500" cy="136" r="7" style="fill:var(--warn)"/>
+      <text class="s-tb" x="516" y="141">Use Cases</text>
+      <text class="s-tm" x="516" y="160">PlaceOrder, port OrderRepository</text>
+      <circle cx="500" cy="202" r="7" style="fill:var(--new)"/>
+      <text class="s-tb" x="516" y="207">Interface Adapters</text>
+      <text class="s-tm" x="516" y="226">Controller, PostgresOrderRepository</text>
+      <circle cx="500" cy="268" r="7" style="fill:var(--muted)"/>
+      <text class="s-tb" x="516" y="273">Frameworks &amp; Drivers</text>
+      <text class="s-tm" x="516" y="292">Express, Prisma, KafkaJS, gRPC</text>
+      <text class="s-tm" x="500" y="350" style="fill:var(--accent)">→ mũi tên: phụ thuộc chỉ hướng vào trong</text>
+    </svg>
+    </div>
+    <figcaption>Càng vào trong càng ổn định và trừu tượng; càng ra ngoài càng cụ thể và dễ thay.</figcaption>
+  </figure>
+  <div class="tbl"><table>
+    <thead><tr><th>Vòng</th><th>Chứa gì</th><th>Ví dụ</th></tr></thead>
+    <tbody>
+      <tr><td><b>Entities</b></td><td>Quy tắc nghiệp vụ cốt lõi, đúng với mọi ứng dụng của doanh nghiệp</td><td><code>Order</code> tự tính tổng tiền, không cho thêm món khi đã thanh toán</td></tr>
+      <tr><td><b>Use Cases</b></td><td>Quy trình của ứng dụng, điều phối entity, định nghĩa <b>port</b> (interface) mình cần</td><td><code>PlaceOrder</code>, <code>CancelOrder</code>, interface <code>OrderRepository</code></td></tr>
+      <tr><td><b>Interface Adapters</b></td><td>Chuyển dữ liệu giữa định dạng của use case và định dạng bên ngoài</td><td>Controller, presenter, <code>PostgresOrderRepository</code>, Kafka publisher</td></tr>
+      <tr><td><b>Frameworks &amp; Drivers</b></td><td>Công cụ cụ thể, nằm ngoài cùng, dễ thay nhất</td><td>Express, NestJS, Prisma, pg driver, KafkaJS, gRPC server</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="ca-rule">
+  <h2><span class="n">02</span>Dependency Rule</h2>
+  <p><b>Phụ thuộc trong code chỉ được hướng vào trong.</b> Vòng trong không import, không nhắc tên bất cứ thứ gì ở vòng ngoài: không <code>import express</code>, không kiểu dữ liệu của Prisma, không annotation của ORM.</p>
+  <p>Nhưng lúc chạy, use case vẫn phải gọi ra database ở vòng ngoài. Cách giải là <b>Dependency Inversion</b>: use case định nghĩa interface (port), vòng ngoài hiện thực interface đó (adapter), và một chỗ duy nhất gọi là <b>composition root</b> nối chúng lại.</p>
+  <div class="note tip"><b>Dữ liệu qua ranh giới</b> nên là object đơn giản (DTO), không truyền nguyên request của Express hay row của ORM vào use case.</div>
+</section>
+
+<section id="ca-flow">
+  <h2><span class="n">03</span>Luồng một request</h2>
+  <figure class="fig">
+    <div class="scroll">
+    <svg viewBox="0 0 900 270" role="img" aria-label="Controller gọi use case PlaceOrder; use case dùng entity Order và port OrderRepository; PostgresOrderRepo hiện thực port">
+      <defs><marker id="cfa" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/></marker><marker id="cfb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--warn)"/></marker></defs>
+      <rect class="s-box" x="16" y="118" width="160" height="56" rx="7"/><text class="s-tb" x="28" y="142">OrderController</text><text class="s-tm" x="28" y="160">Express · adapter</text>
+      <rect class="s-hl" x="236" y="118" width="160" height="56" rx="7"/><text class="s-tb" x="248" y="142">PlaceOrder</text><text class="s-tm" x="248" y="160">use case</text>
+      <rect class="s-disk" x="470" y="40" width="180" height="56" rx="7"/><text class="s-tb" x="482" y="64">OrderRepository</text><text class="s-tm" x="482" y="82">«interface» · port</text>
+      <rect class="s-hl" x="470" y="196" width="180" height="56" rx="7"/><text class="s-tb" x="482" y="220">Order</text><text class="s-tm" x="482" y="238">entity</text>
+      <rect class="s-box" x="712" y="40" width="176" height="56" rx="7"/><text class="s-tb" x="724" y="64">PostgresOrderRepo</text><text class="s-tm" x="724" y="82">adapter · pg</text>
+      <path class="s-ln" d="M176 146 H234" marker-end="url(#cfa)"/>
+      <text class="s-tm" x="182" y="138">gọi</text>
+      <path class="s-ln" d="M396 136 C430 136 430 68 468 68" marker-end="url(#cfa)"/>
+      <path class="s-ln" d="M396 156 C430 156 430 224 468 224" marker-end="url(#cfa)"/>
+      <path class="s-dl2" d="M712 68 H652" marker-end="url(#cfb)"/>
+      <text class="s-tm" x="640" y="112" style="fill:var(--warn)">hiện thực ←</text>
+      <text class="s-tm" x="470" y="130">lúc chạy: use case gọi port,</text>
+      <text class="s-tm" x="470" y="148">thực tế chạy vào Postgres</text>
+      <text class="s-tm" x="712" y="136" style="fill:var(--warn)">trong code: adapter</text>
+      <text class="s-tm" x="712" y="154" style="fill:var(--warn)">phụ thuộc interface</text>
+    </svg>
+    </div>
+    <figcaption>Luồng gọi đi ra ngoài (xanh), nhưng phụ thuộc trong code luôn hướng vào trong (cam): Postgres biết interface, interface không biết Postgres.</figcaption>
+  </figure>
+  <ol class="steps">
+    <li><div><b>Controller</b> (adapter)<div class="d">Nhận HTTP request, đọc và kiểm tra định dạng, chuyển thành input DTO.</div></div></li>
+    <li><div><b>Use case</b><div class="d">Chạy quy trình: tải entity qua port, gọi quy tắc của entity, lưu lại qua port, phát sự kiện.</div></div></li>
+    <li><div><b>Entity</b><div class="d">Tự bảo vệ quy tắc nghiệp vụ, ví dụ không cho tổng tiền âm.</div></div></li>
+    <li><div><b>Repository adapter</b><div class="d">Hiện thực port bằng Postgres; chuyển entity sang row và ngược lại.</div></div></li>
+    <li><div><b>Trả kết quả</b><div class="d">Use case trả output DTO; controller (hoặc presenter) đổi thành HTTP response, status code.</div></div></li>
+  </ol>
+</section>
+
+<section id="ca-code">
+  <h2><span class="n">04</span>Code mẫu TypeScript</h2>
+  <h3>Entity: nghiệp vụ thuần</h3>
+<pre class="code"><code><span class="c1">// domain/order.ts — no imports from frameworks</span>
+<span class="k">export</span><span class="w"> </span><span class="kd">class</span><span class="w"> </span><span class="nc">Order</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">private</span><span class="w"> </span><span class="kr">constructor</span><span class="p">(</span>
+<span class="w">    </span><span class="k">readonly</span><span class="w"> </span><span class="nx">id</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">,</span>
+<span class="w">    </span><span class="k">readonly</span><span class="w"> </span><span class="nx">customerId</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">,</span>
+<span class="w">    </span><span class="k">private</span><span class="w"> </span><span class="nx">items</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">sku</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">;</span><span class="w"> </span><span class="nx">price</span><span class="o">:</span><span class="w"> </span><span class="kt">number</span><span class="p">;</span><span class="w"> </span><span class="nx">qty</span><span class="o">:</span><span class="w"> </span><span class="kt">number</span><span class="w"> </span><span class="p">}[],</span>
+<span class="w">    </span><span class="k">private</span><span class="w"> </span><span class="nx">status</span><span class="o">:</span><span class="w"> </span><span class="s2">"pending"</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="s2">"paid"</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"pending"</span><span class="p">,</span>
+<span class="w">  </span><span class="p">)</span><span class="w"> </span><span class="p">{}</span>
+
+<span class="w">  </span><span class="k">static</span><span class="w"> </span><span class="nf">create</span><span class="p">(</span><span class="nx">id</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">,</span><span class="w"> </span><span class="nx">customerId</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="nf">Order</span><span class="p">(</span><span class="nx">id</span><span class="p">,</span><span class="w"> </span><span class="nx">customerId</span><span class="p">,</span><span class="w"> </span><span class="p">[]);</span><span class="w"> </span><span class="p">}</span>
+
+<span class="w">  </span><span class="nf">addItem</span><span class="p">(</span><span class="nx">sku</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">,</span><span class="w"> </span><span class="nx">price</span><span class="o">:</span><span class="w"> </span><span class="kt">number</span><span class="p">,</span><span class="w"> </span><span class="nx">qty</span><span class="o">:</span><span class="w"> </span><span class="kt">number</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">status</span><span class="w"> </span><span class="o">!==</span><span class="w"> </span><span class="s2">"pending"</span><span class="p">)</span><span class="w"> </span><span class="k">throw</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="ne">Error</span><span class="p">(</span><span class="s2">"Order already paid"</span><span class="p">);</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">qty</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mf">0</span><span class="p">)</span><span class="w"> </span><span class="k">throw</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="ne">Error</span><span class="p">(</span><span class="s2">"Quantity must be positive"</span><span class="p">);</span>
+<span class="w">    </span><span class="k">this</span><span class="p">.</span><span class="nx">items</span><span class="p">.</span><span class="nx">push</span><span class="p">({</span><span class="w"> </span><span class="nx">sku</span><span class="p">,</span><span class="w"> </span><span class="nx">price</span><span class="p">,</span><span class="w"> </span><span class="nx">qty</span><span class="w"> </span><span class="p">});</span>
+<span class="w">  </span><span class="p">}</span>
+
+<span class="w">  </span><span class="nx">total</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">items</span><span class="p">.</span><span class="nx">reduce</span><span class="p">((</span><span class="nx">s</span><span class="p">,</span><span class="w"> </span><span class="nx">i</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">s</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nx">i</span><span class="p">.</span><span class="nx">price</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nx">i</span><span class="p">.</span><span class="nx">qty</span><span class="p">,</span><span class="w"> </span><span class="mf">0</span><span class="p">);</span><span class="w"> </span><span class="p">}</span>
+<span class="w">  </span><span class="nx">markPaid</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"paid"</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+<span class="p">}</span></code></pre>
+
+  <h3>Use case và port</h3>
+<pre class="code"><code><span class="c1">// application/ports.ts — interfaces owned by the inner layer</span>
+<span class="k">export</span><span class="w"> </span><span class="kd">interface</span><span class="w"> </span><span class="nc">OrderRepository</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nf">save</span><span class="p">(</span><span class="nx">order</span><span class="o">:</span><span class="w"> </span><span class="kt">Order</span><span class="p">)</span><span class="o">:</span><span class="w"> </span><span class="nb">Promise</span><span class="o">&lt;</span><span class="ow">void</span><span class="o">&gt;</span><span class="p">;</span>
+<span class="w">  </span><span class="nf">findById</span><span class="p">(</span><span class="nx">id</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">)</span><span class="o">:</span><span class="w"> </span><span class="nb">Promise</span><span class="o">&lt;</span><span class="nc">Order</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="kc">null</span><span class="o">&gt;</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="k">export</span><span class="w"> </span><span class="kd">interface</span><span class="w"> </span><span class="nc">EventPublisher</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nf">publish</span><span class="p">(</span><span class="nx">topic</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">,</span><span class="w"> </span><span class="nx">payload</span><span class="o">:</span><span class="w"> </span><span class="kt">object</span><span class="p">)</span><span class="o">:</span><span class="w"> </span><span class="nb">Promise</span><span class="o">&lt;</span><span class="ow">void</span><span class="o">&gt;</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+<span class="k">export</span><span class="w"> </span><span class="kd">interface</span><span class="w"> </span><span class="nc">IdGenerator</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">next</span><span class="p">()</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+
+<span class="c1">// application/place-order.ts</span>
+<span class="k">export</span><span class="w"> </span><span class="kr">type</span><span class="w"> </span><span class="nc">PlaceOrderInput</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">customerId</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">;</span><span class="w"> </span><span class="nx">items</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">sku</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">;</span><span class="w"> </span><span class="nx">price</span><span class="o">:</span><span class="w"> </span><span class="kt">number</span><span class="p">;</span><span class="w"> </span><span class="nx">qty</span><span class="o">:</span><span class="w"> </span><span class="kt">number</span><span class="w"> </span><span class="p">}[]</span><span class="w"> </span><span class="p">};</span>
+<span class="k">export</span><span class="w"> </span><span class="kr">type</span><span class="w"> </span><span class="nc">PlaceOrderOutput</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">orderId</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">;</span><span class="w"> </span><span class="nx">total</span><span class="o">:</span><span class="w"> </span><span class="kt">number</span><span class="w"> </span><span class="p">};</span>
+
+<span class="k">export</span><span class="w"> </span><span class="kd">class</span><span class="w"> </span><span class="nc">PlaceOrder</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kr">constructor</span><span class="p">(</span>
+<span class="w">    </span><span class="k">private</span><span class="w"> </span><span class="nx">orders</span><span class="o">:</span><span class="w"> </span><span class="kt">OrderRepository</span><span class="p">,</span>
+<span class="w">    </span><span class="k">private</span><span class="w"> </span><span class="nx">events</span><span class="o">:</span><span class="w"> </span><span class="kt">EventPublisher</span><span class="p">,</span>
+<span class="w">    </span><span class="k">private</span><span class="w"> </span><span class="nx">ids</span><span class="o">:</span><span class="w"> </span><span class="kt">IdGenerator</span><span class="p">,</span>
+<span class="w">  </span><span class="p">)</span><span class="w"> </span><span class="p">{}</span>
+
+<span class="w">  </span><span class="k">async</span><span class="w"> </span><span class="nf">execute</span><span class="p">(</span><span class="nx">input</span><span class="o">:</span><span class="w"> </span><span class="kt">PlaceOrderInput</span><span class="p">)</span><span class="o">:</span><span class="w"> </span><span class="nb">Promise</span><span class="o">&lt;</span><span class="nc">PlaceOrderOutput</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">const</span><span class="w"> </span><span class="nx">order</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Order</span><span class="p">.</span><span class="nf">create</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">ids</span><span class="p">.</span><span class="nx">next</span><span class="p">(),</span><span class="w"> </span><span class="nx">input</span><span class="p">.</span><span class="nx">customerId</span><span class="p">);</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kd">const</span><span class="w"> </span><span class="nx">i</span><span class="w"> </span><span class="k">of</span><span class="w"> </span><span class="nx">input</span><span class="p">.</span><span class="nx">items</span><span class="p">)</span><span class="w"> </span><span class="nx">order</span><span class="p">.</span><span class="nf">addItem</span><span class="p">(</span><span class="nx">i</span><span class="p">.</span><span class="nx">sku</span><span class="p">,</span><span class="w"> </span><span class="nx">i</span><span class="p">.</span><span class="nx">price</span><span class="p">,</span><span class="w"> </span><span class="nx">i</span><span class="p">.</span><span class="nx">qty</span><span class="p">);</span>
+<span class="w">    </span><span class="k">await</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">orders</span><span class="p">.</span><span class="nf">save</span><span class="p">(</span><span class="nx">order</span><span class="p">);</span>
+<span class="w">    </span><span class="k">await</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">events</span><span class="p">.</span><span class="nf">publish</span><span class="p">(</span><span class="s2">"orders.placed"</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">id</span><span class="o">:</span><span class="w"> </span><span class="kt">order.id</span><span class="p">,</span><span class="w"> </span><span class="nx">total</span><span class="o">:</span><span class="w"> </span><span class="kt">order.total</span><span class="p">()</span><span class="w"> </span><span class="p">});</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">orderId</span><span class="o">:</span><span class="w"> </span><span class="kt">order.id</span><span class="p">,</span><span class="w"> </span><span class="nx">total</span><span class="o">:</span><span class="w"> </span><span class="kt">order.total</span><span class="p">()</span><span class="w"> </span><span class="p">};</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span></code></pre>
+
+  <h3>Adapter: hiện thực port</h3>
+<pre class="code"><code><span class="c1">// infrastructure/postgres-order-repository.ts</span>
+<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nc">Pool</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">"pg"</span><span class="p">;</span>
+
+<span class="k">export</span><span class="w"> </span><span class="kd">class</span><span class="w"> </span><span class="nc">PostgresOrderRepository</span><span class="w"> </span><span class="k">implements</span><span class="w"> </span><span class="nc">OrderRepository</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kr">constructor</span><span class="p">(</span><span class="k">private</span><span class="w"> </span><span class="nx">pool</span><span class="o">:</span><span class="w"> </span><span class="kt">Pool</span><span class="p">)</span><span class="w"> </span><span class="p">{}</span>
+<span class="w">  </span><span class="k">async</span><span class="w"> </span><span class="nf">save</span><span class="p">(</span><span class="nx">order</span><span class="o">:</span><span class="w"> </span><span class="kt">Order</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">await</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">pool</span><span class="p">.</span><span class="nf">query</span><span class="p">(</span>
+<span class="w">      </span><span class="s2">"INSERT INTO orders(id, customer_id, total) VALUES ($1, $2, $3) ON CONFLICT (id) DO UPDATE SET total = $3"</span><span class="p">,</span>
+<span class="w">      </span><span class="p">[</span><span class="nx">order</span><span class="p">.</span><span class="nx">id</span><span class="p">,</span><span class="w"> </span><span class="nx">order</span><span class="p">.</span><span class="nx">customerId</span><span class="p">,</span><span class="w"> </span><span class="nx">order</span><span class="p">.</span><span class="nx">total</span><span class="p">()],</span>
+<span class="w">    </span><span class="p">);</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="w">  </span><span class="k">async</span><span class="w"> </span><span class="nf">findById</span><span class="p">(</span><span class="nx">id</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="cm">/* map row -&gt; Order */</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="kc">null</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">// interface/http/order-controller.ts</span>
+<span class="k">import</span><span class="w"> </span><span class="kr">type</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nc">Request</span><span class="p">,</span><span class="w"> </span><span class="nc">Response</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">"express"</span><span class="p">;</span>
+
+<span class="k">export</span><span class="w"> </span><span class="kd">const</span><span class="w"> </span><span class="nx">placeOrderHandler</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="nx">useCase</span><span class="o">:</span><span class="w"> </span><span class="kt">PlaceOrder</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="k">async</span><span class="w"> </span><span class="p">(</span><span class="nx">req</span><span class="o">:</span><span class="w"> </span><span class="kt">Request</span><span class="p">,</span><span class="w"> </span><span class="nx">res</span><span class="o">:</span><span class="w"> </span><span class="kt">Response</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">try</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">const</span><span class="w"> </span><span class="nx">out</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="nx">useCase</span><span class="p">.</span><span class="nx">execute</span><span class="p">({</span><span class="w"> </span><span class="nx">customerId</span><span class="o">:</span><span class="w"> </span><span class="kt">req.body.customerId</span><span class="p">,</span><span class="w"> </span><span class="nx">items</span><span class="o">:</span><span class="w"> </span><span class="kt">req.body.items</span><span class="w"> </span><span class="p">});</span>
+<span class="w">    </span><span class="nx">res</span><span class="p">.</span><span class="nf">status</span><span class="p">(</span><span class="mf">201</span><span class="p">).</span><span class="nf">location</span><span class="p">(</span><span class="sb">`/orders/</span><span class="si">${</span><span class="nx">out</span><span class="p">.</span><span class="nx">orderId</span><span class="si">}</span><span class="sb">`</span><span class="p">).</span><span class="nf">json</span><span class="p">(</span><span class="nx">out</span><span class="p">);</span>
+<span class="w">  </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="nx">e</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">res</span><span class="p">.</span><span class="nf">status</span><span class="p">(</span><span class="mf">422</span><span class="p">).</span><span class="nx">json</span><span class="p">({</span><span class="w"> </span><span class="nx">title</span><span class="o">:</span><span class="w"> </span><span class="s2">"Invalid order"</span><span class="p">,</span><span class="w"> </span><span class="nx">detail</span><span class="o">:</span><span class="w"> </span><span class="p">(</span><span class="nx">e</span><span class="w"> </span><span class="kr">as</span><span class="w"> </span><span class="ne">Error</span><span class="p">).</span><span class="nx">message</span><span class="w"> </span><span class="p">});</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">};</span></code></pre>
+
+  <h3>Composition root: nối mọi thứ một lần</h3>
+<pre class="code"><code><span class="c1">// main.ts — the only file that knows every concrete class</span>
+<span class="kd">const</span><span class="w"> </span><span class="nx">pool</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="nc">Pool</span><span class="p">({</span><span class="w"> </span><span class="nx">connectionString</span><span class="o">:</span><span class="w"> </span><span class="kt">process.env.DATABASE_URL</span><span class="w"> </span><span class="p">});</span>
+<span class="kd">const</span><span class="w"> </span><span class="nx">placeOrder</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="nf">PlaceOrder</span><span class="p">(</span>
+<span class="w">  </span><span class="ow">new</span><span class="w"> </span><span class="nf">PostgresOrderRepository</span><span class="p">(</span><span class="nx">pool</span><span class="p">),</span>
+<span class="w">  </span><span class="ow">new</span><span class="w"> </span><span class="nf">KafkaEventPublisher</span><span class="p">(</span><span class="nx">kafkaProducer</span><span class="p">),</span>
+<span class="w">  </span><span class="p">{</span><span class="w"> </span><span class="nx">next</span><span class="o">:</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">crypto</span><span class="p">.</span><span class="nx">randomUUID</span><span class="p">()</span><span class="w"> </span><span class="p">},</span>
+<span class="p">);</span>
+
+<span class="kd">const</span><span class="w"> </span><span class="nx">app</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">express</span><span class="p">().</span><span class="nf">use</span><span class="p">(</span><span class="nx">express</span><span class="p">.</span><span class="nx">json</span><span class="p">());</span>
+<span class="nx">app</span><span class="p">.</span><span class="nf">post</span><span class="p">(</span><span class="s2">"/orders"</span><span class="p">,</span><span class="w"> </span><span class="nf">placeOrderHandler</span><span class="p">(</span><span class="nx">placeOrder</span><span class="p">));</span>
+<span class="nx">app</span><span class="p">.</span><span class="nf">listen</span><span class="p">(</span><span class="mf">3000</span><span class="p">);</span></code></pre>
+
+  <h3>Test use case không cần database</h3>
+<pre class="code"><code><span class="c1">// In-memory fakes implement the same ports</span>
+<span class="kd">class</span><span class="w"> </span><span class="nc">InMemoryOrders</span><span class="w"> </span><span class="k">implements</span><span class="w"> </span><span class="nc">OrderRepository</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="nb">Map</span><span class="o">&lt;</span><span class="kt">string</span><span class="p">,</span><span class="w"> </span><span class="nc">Order</span><span class="o">&gt;</span><span class="p">();</span>
+<span class="w">  </span><span class="k">async</span><span class="w"> </span><span class="nf">save</span><span class="p">(</span><span class="nx">o</span><span class="o">:</span><span class="w"> </span><span class="kt">Order</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">data</span><span class="p">.</span><span class="nf">set</span><span class="p">(</span><span class="nx">o</span><span class="p">.</span><span class="nx">id</span><span class="p">,</span><span class="w"> </span><span class="nx">o</span><span class="p">);</span><span class="w"> </span><span class="p">}</span>
+<span class="w">  </span><span class="k">async</span><span class="w"> </span><span class="nf">findById</span><span class="p">(</span><span class="nx">id</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">data</span><span class="p">.</span><span class="nf">get</span><span class="p">(</span><span class="nx">id</span><span class="p">)</span><span class="w"> </span><span class="o">??</span><span class="w"> </span><span class="kc">null</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="nf">test</span><span class="p">(</span><span class="s2">"places an order and publishes an event"</span><span class="p">,</span><span class="w"> </span><span class="k">async</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kd">const</span><span class="w"> </span><span class="nx">orders</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="nc">InMemoryOrders</span><span class="p">();</span>
+<span class="w">  </span><span class="kd">const</span><span class="w"> </span><span class="nx">published</span><span class="o">:</span><span class="w"> </span><span class="kt">object</span><span class="p">[]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[];</span>
+<span class="w">  </span><span class="kd">const</span><span class="w"> </span><span class="nx">useCase</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="nf">PlaceOrder</span><span class="p">(</span><span class="nx">orders</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">publish</span><span class="o">:</span><span class="w"> </span><span class="kt">async</span><span class="w"> </span><span class="p">(</span><span class="nx">_t</span><span class="p">,</span><span class="w"> </span><span class="nx">p</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">published</span><span class="p">.</span><span class="nf">push</span><span class="p">(</span><span class="nx">p</span><span class="p">);</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">},</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">next</span><span class="o">:</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="s2">"o-1"</span><span class="w"> </span><span class="p">});</span>
+
+<span class="w">  </span><span class="kd">const</span><span class="w"> </span><span class="nx">out</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="nx">useCase</span><span class="p">.</span><span class="nx">execute</span><span class="p">({</span><span class="w"> </span><span class="nx">customerId</span><span class="o">:</span><span class="w"> </span><span class="s2">"c-7"</span><span class="p">,</span><span class="w"> </span><span class="nx">items</span><span class="o">:</span><span class="w"> </span><span class="p">[{</span><span class="w"> </span><span class="nx">sku</span><span class="o">:</span><span class="w"> </span><span class="s2">"A"</span><span class="p">,</span><span class="w"> </span><span class="nx">price</span><span class="o">:</span><span class="w"> </span><span class="kt">50_000</span><span class="p">,</span><span class="w"> </span><span class="nx">qty</span><span class="o">:</span><span class="w"> </span><span class="kt">2</span><span class="w"> </span><span class="p">}]</span><span class="w"> </span><span class="p">});</span>
+
+<span class="w">  </span><span class="nf">expect</span><span class="p">(</span><span class="nx">out</span><span class="p">).</span><span class="nx">toEqual</span><span class="p">({</span><span class="w"> </span><span class="nx">orderId</span><span class="o">:</span><span class="w"> </span><span class="s2">"o-1"</span><span class="p">,</span><span class="w"> </span><span class="nx">total</span><span class="o">:</span><span class="w"> </span><span class="kt">100_000</span><span class="w"> </span><span class="p">});</span>
+<span class="w">  </span><span class="nf">expect</span><span class="p">(</span><span class="nx">published</span><span class="p">).</span><span class="nf">toHaveLength</span><span class="p">(</span><span class="mf">1</span><span class="p">);</span>
+<span class="p">});</span></code></pre>
+</section>
+
+<section id="ca-folder">
+  <h2><span class="n">05</span>Cấu trúc thư mục gợi ý</h2>
+<pre class="code"><code>src/
+  domain/              <span class="c1"># Entities, value objects, domain errors — no dependencies</span>
+    order.ts
+  application/         <span class="c1"># Use cases + ports (interfaces) — depends on domain only</span>
+    ports.ts
+    place-order.ts
+    cancel-order.ts
+  infrastructure/      <span class="c1"># Adapters to the outside world — implements ports</span>
+    postgres-order-repository.ts
+    kafka-event-publisher.ts
+  interface/           <span class="c1"># Delivery mechanisms</span>
+    http/order-controller.ts
+    grpc/order-service.ts
+  main.ts              <span class="c1"># Composition root</span></code></pre>
+  <p>Có thể dùng công cụ như <code>dependency-cruiser</code> hoặc luật ESLint để chặn <code>domain/</code> import từ <code>infrastructure/</code>, biến Dependency Rule thành kiểm tra tự động.</p>
+  <p>Với hệ thống lớn, nhiều đội chia thư mục <b>theo tính năng trước</b> (<code>orders/</code>, <code>payments/</code>), rồi mới chia tầng bên trong mỗi tính năng.</p>
+</section>
+
+<section id="ca-family">
+  <h2><span class="n">06</span>Hexagonal &amp; Onion: cùng một gia đình</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>Kiến trúc</th><th>Tác giả</th><th>Cách gọi</th></tr></thead>
+    <tbody>
+      <tr><td><b>Hexagonal</b> (Ports &amp; Adapters)</td><td>Alistair Cockburn, 2005</td><td>Lõi ứng dụng ở giữa, mỗi cạnh là một <b>port</b>; <b>driving adapter</b> (HTTP, CLI, consumer) gọi vào, <b>driven adapter</b> (DB, broker) được gọi ra.</td></tr>
+      <tr><td><b>Onion</b></td><td>Jeffrey Palermo, 2008</td><td>Domain model ở tâm, domain services, application services, rồi hạ tầng ở lớp ngoài.</td></tr>
+      <tr><td><b>Clean</b></td><td>Robert C. Martin, 2012</td><td>Gộp các ý trên thành bốn vòng và Dependency Rule.</td></tr>
+    </tbody>
+  </table></div>
+  <p>Cả ba có chung một ý: <b>nghiệp vụ ở trung tâm, phụ thuộc hướng vào trong, hạ tầng là chi tiết có thể thay</b>. Khác biệt chủ yếu ở tên gọi và số lớp.</p>
+  <div class="note tip"><b>Liên hệ với các phần khác của sổ tay:</b> KafkaJS producer, Express route, gRPC server, RabbitMQ consumer đều là adapter ở vòng ngoài. Use case không cần biết sự kiện đi qua Kafka hay NATS, chỉ biết port <code>EventPublisher</code>.</div>
+</section>
+
+<section id="ca-when">
+  <h2><span class="n">07</span>Khi nào dùng, lỗi hay gặp</h2>
+  <div class="cmp">
+    <div><h4>Nên dùng khi</h4>
+      <ul class="plain">
+        <li>Nghiệp vụ phức tạp, sống lâu, nhiều quy tắc.</li>
+        <li>Cần test nghiệp vụ nhanh, độc lập hạ tầng.</li>
+        <li>Có khả năng đổi database, framework, hoặc thêm kênh giao tiếp (REST, gRPC, consumer).</li>
+      </ul>
+    </div>
+    <div><h4>Chưa cần khi</h4>
+      <ul class="plain">
+        <li>CRUD đơn giản, ít logic: ba lớp interface cho mỗi bảng chỉ làm chậm.</li>
+        <li>Prototype, script, service rất nhỏ.</li>
+        <li>Đội chưa quen; áp dụng nửa vời còn tệ hơn không áp dụng.</li>
+      </ul>
+    </div>
+  </div>
+  <h3>Lỗi hay gặp</h3>
+  <ul class="plain">
+    <li>Entity “thiếu máu”: chỉ có getter/setter, mọi quy tắc nằm trong use case hoặc controller.</li>
+    <li>Rò rỉ framework vào trong: entity mang decorator của ORM, use case nhận <code>Request</code> của Express.</li>
+    <li>Tạo interface cho mọi thứ, kể cả những thứ không bao giờ thay. Chỉ cần port ở chỗ chạm ra bên ngoài.</li>
+    <li>Use case gọi use case khác lồng nhau tạo thành mạng phụ thuộc; nên tách logic chung xuống entity hoặc domain service.</li>
+    <li>Ánh xạ dữ liệu quá nhiều lớp (DTO → command → entity → row → DTO) mà không lớp nào thêm giá trị.</li>
+  </ul>
+</section>
+<footer>Ghi chú học Clean Architecture của Ryan · cập nhật 19/10/2026</footer>
+</main>
+</div>

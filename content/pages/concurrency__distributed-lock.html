@@ -1,0 +1,195 @@
+<div class="wrap">
+<nav class="toc" aria-label="Mục lục distributed lock">
+  <div class="label">Mục lục</div>
+  <ol>
+    <li><a href="#dl-local"><span>01</span>Lock trong một tiến trình</a></li>
+    <li><a href="#dl-why"><span>02</span>Vì sao cần distributed lock</a></li>
+    <li><a href="#dl-redis"><span>03</span>Redis lock</a></li>
+    <li><a href="#dl-fencing"><span>04</span>Lease hết hạn &amp; fencing token</a></li>
+    <li><a href="#dl-redlock"><span>05</span>Redlock</a></li>
+    <li><a href="#dl-others"><span>06</span>etcd, ZooKeeper, PostgreSQL</a></li>
+    <li><a href="#dl-rules"><span>07</span>Quy tắc dùng an toàn</a></li>
+  </ol>
+</nav>
+<main>
+<header class="hero">
+  <div class="eyebrow">đồng thời · nhiều instance</div>
+  <h1>Distributed lock: khóa xuyên nhiều máy</h1>
+  <p class="lede">Khi ứng dụng chạy nhiều instance, lock trong bộ nhớ của một instance không ngăn được instance khác. Distributed lock đặt “chìa khóa” ở một hệ thống mà mọi instance cùng thấy. Khó hơn lock thường nhiều, vì mạng có thể chậm, tiến trình có thể dừng giữa chừng và đồng hồ có thể lệch.</p>
+  <div class="tape" aria-hidden="true"><div>SET NX</div><div>PX 30000</div><div>token</div><div class="hw">fencing</div><div class="leo">release</div></div>
+</header>
+
+<section id="dl-local">
+  <h2><span class="n">01</span>Lock trong một tiến trình: mutex &amp; semaphore</h2>
+  <p>Node.js chạy một luồng nhưng các hàm async vẫn xen kẽ nhau tại mỗi <code>await</code>. Muốn một đoạn code async chỉ chạy một lần tại một thời điểm trong cùng tiến trình, dùng mutex (ví dụ thư viện <code>async-mutex</code>).</p>
+<pre class="code"><code><span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nc">Mutex</span><span class="p">,</span><span class="w"> </span><span class="nc">Semaphore</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">"async-mutex"</span><span class="p">;</span>
+
+<span class="c1">// Mutex: only one refresh at a time inside this process</span>
+<span class="kd">const</span><span class="w"> </span><span class="nx">tokenMutex</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="nc">Mutex</span><span class="p">();</span>
+<span class="kd">let</span><span class="w"> </span><span class="nx">cachedToken</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="kc">undefined</span><span class="p">;</span>
+
+<span class="k">async</span><span class="w"> </span><span class="kd">function</span><span class="w"> </span><span class="nx">getAccessToken</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="nx">tokenMutex</span><span class="p">.</span><span class="nf">runExclusive</span><span class="p">(</span><span class="k">async</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="nx">cachedToken</span><span class="p">)</span><span class="w"> </span><span class="nx">cachedToken</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="nx">fetchNewToken</span><span class="p">();</span><span class="w"> </span><span class="c1">// other callers wait, then reuse</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="nx">cachedToken</span><span class="p">;</span>
+<span class="w">  </span><span class="p">});</span>
+<span class="p">}</span>
+
+<span class="c1">// Semaphore: at most 5 concurrent calls to a slow API (see Bulkhead pattern)</span>
+<span class="kd">const</span><span class="w"> </span><span class="nx">apiSlots</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="nf">Semaphore</span><span class="p">(</span><span class="mf">5</span><span class="p">);</span>
+<span class="k">await</span><span class="w"> </span><span class="nx">apiSlots</span><span class="p">.</span><span class="nx">runExclusive</span><span class="p">(()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">callSlowApi</span><span class="p">());</span></code></pre>
+  <div class="note">Mutex trong bộ nhớ <b>chỉ có tác dụng trong một instance</b>. Chạy 3 pod thì có 3 mutex độc lập. Đó là lúc cần distributed lock, hoặc tốt hơn, một cơ chế ở database.</div>
+</section>
+
+<section id="dl-why">
+  <h2><span class="n">02</span>Khi nào cần distributed lock</h2>
+  <ul class="plain">
+    <li><b>Cron job chạy trên nhiều instance</b>: chỉ một instance được gửi báo cáo cuối ngày.</li>
+    <li><b>Gọi hệ thống ngoài không có idempotency</b>: chỉ một tiến trình được làm mới token OAuth dùng chung.</li>
+    <li><b>Tài nguyên không nằm trong một database</b>: file trên S3, nhiều hệ thống cùng chạm vào.</li>
+    <li><b>Bầu leader</b>: một instance làm việc nền, các instance khác dự phòng.</li>
+  </ul>
+  <div class="note tip">Nếu dữ liệu nằm trong <b>một database</b>, hãy ưu tiên atomic update, <code>FOR UPDATE</code> hoặc optimistic lock ở tab trước. Chúng nằm trong transaction nên an toàn hơn distributed lock nhiều.</div>
+</section>
+
+<section id="dl-redis">
+  <h2><span class="n">03</span>Redis lock: cách phổ biến nhất</h2>
+  <ol class="steps">
+    <li><div><b>Lấy khóa</b><div class="d"><code>SET lock:report &lt;token&gt; NX PX 30000</code>: chỉ đặt nếu chưa có (<code>NX</code>), tự hết hạn sau 30 giây (<code>PX</code>) để không kẹt mãi nếu tiến trình chết.</div></div></li>
+    <li><div><b>Làm việc</b><div class="d">Phải xong trước khi khóa hết hạn, hoặc gia hạn định kỳ.</div></div></li>
+    <li><div><b>Nhả khóa đúng chủ</b><div class="d">Chỉ xóa nếu giá trị vẫn là token của mình, bằng một script Lua để kiểm tra và xóa là một thao tác atomic.</div></div></li>
+  </ol>
+<pre class="code"><code><span class="k">import</span><span class="w"> </span><span class="nc">Redis</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">"ioredis"</span><span class="p">;</span>
+<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">randomUUID</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">"node:crypto"</span><span class="p">;</span>
+
+<span class="kd">const</span><span class="w"> </span><span class="nx">redis</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="nf">Redis</span><span class="p">(</span><span class="nx">process</span><span class="p">.</span><span class="nx">env</span><span class="p">.</span><span class="nc">REDIS_URL</span><span class="o">!</span><span class="p">);</span>
+
+<span class="kd">const</span><span class="w"> </span><span class="nc">RELEASE_SCRIPT</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="sb">`</span>
+<span class="sb">  if redis.call("get", KEYS[1]) == ARGV[1] then</span>
+<span class="sb">    return redis.call("del", KEYS[1])</span>
+<span class="sb">  end</span>
+<span class="sb">  return 0</span>
+<span class="sb">`</span><span class="p">;</span>
+
+<span class="k">async</span><span class="w"> </span><span class="kd">function</span><span class="w"> </span><span class="nx">withLock</span><span class="o">&lt;</span><span class="nc">T</span><span class="o">&gt;</span><span class="p">(</span><span class="nx">key</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">,</span><span class="w"> </span><span class="nx">ttlMs</span><span class="o">:</span><span class="w"> </span><span class="kt">number</span><span class="p">,</span><span class="w"> </span><span class="nx">fn</span><span class="o">:</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nb">Promise</span><span class="o">&lt;</span><span class="nc">T</span><span class="o">&gt;</span><span class="p">)</span><span class="o">:</span><span class="w"> </span><span class="nb">Promise</span><span class="o">&lt;</span><span class="nc">T</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="kc">null</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kd">const</span><span class="w"> </span><span class="nx">token</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">randomUUID</span><span class="p">();</span><span class="w">                       </span><span class="c1">// identifies the owner</span>
+<span class="w">  </span><span class="kd">const</span><span class="w"> </span><span class="nx">ok</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="nx">redis</span><span class="p">.</span><span class="nf">set</span><span class="p">(</span><span class="nx">key</span><span class="p">,</span><span class="w"> </span><span class="nx">token</span><span class="p">,</span><span class="w"> </span><span class="s2">"PX"</span><span class="p">,</span><span class="w"> </span><span class="nx">ttlMs</span><span class="p">,</span><span class="w"> </span><span class="s2">"NX"</span><span class="p">);</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">ok</span><span class="w"> </span><span class="o">!==</span><span class="w"> </span><span class="s2">"OK"</span><span class="p">)</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="kc">null</span><span class="p">;</span><span class="w">                     </span><span class="c1">// someone else holds it: non-blocking</span>
+<span class="w">  </span><span class="k">try</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="nx">fn</span><span class="p">();</span>
+<span class="w">  </span><span class="p">}</span><span class="w"> </span><span class="k">finally</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="c1">// Never delete a lock that expired and now belongs to someone else</span>
+<span class="w">    </span><span class="k">await</span><span class="w"> </span><span class="nx">redis</span><span class="p">.</span><span class="nb">eval</span><span class="p">(</span><span class="nc">RELEASE_SCRIPT</span><span class="p">,</span><span class="w"> </span><span class="mf">1</span><span class="p">,</span><span class="w"> </span><span class="nx">key</span><span class="p">,</span><span class="w"> </span><span class="nx">token</span><span class="p">);</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">// Only one instance sends the daily report</span>
+<span class="k">await</span><span class="w"> </span><span class="nf">withLock</span><span class="p">(</span><span class="s2">"lock:daily-report"</span><span class="p">,</span><span class="w"> </span><span class="mf">60</span><span class="nx">_000</span><span class="p">,</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">sendDailyReport</span><span class="p">());</span></code></pre>
+  <div class="pp"><div><span class="pl">Vì sao cần token</span>Nếu xóa bằng <code>DEL</code> thường: A giữ khóa quá TTL, khóa hết hạn, B lấy được; A làm xong gọi <code>DEL</code> và xóa mất khóa của B.</div><div class="warnc"><span class="pl">Giới hạn</span>Một Redis đơn: Redis chết hoặc failover sang replica chưa kịp đồng bộ thì khóa có thể mất, hai bên cùng giữ.</div></div>
+</section>
+
+<section id="dl-fencing">
+  <h2><span class="n">04</span>Lease hết hạn &amp; fencing token</h2>
+  <p>Mọi distributed lock có TTL đều là <b>lease</b> (thuê có hạn). Vấn đề: tiến trình có thể bị dừng (GC pause, máy treo, mạng chậm) lâu hơn TTL mà không biết. Khi tỉnh lại, nó tưởng mình vẫn giữ khóa và ghi đè lên việc của người khác.</p>
+  <figure class="fig">
+    <div class="scroll">
+    <svg viewBox="0 0 900 408" role="img" aria-label="Fencing token: client A lấy khóa với token 33 rồi bị dừng, khóa hết hạn, client B lấy token 34 và ghi; A tỉnh lại ghi với token 33 bị storage từ chối">
+      <defs><marker id="fea" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/></marker><marker id="feb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker><marker id="fec" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--bad)"/></marker><marker id="fed" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--warn)"/></marker><marker id="fee" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--new)"/></marker></defs>
+      <rect class="s-box" x="0.0" y="14" width="140" height="48" rx="7"/>
+      <text class="s-tb" x="70.0" y="35" text-anchor="middle">Client A</text>
+      <text class="s-tm" x="70.0" y="52" text-anchor="middle">worker 1</text>
+      <path d="M70.0 62 V394" style="stroke:var(--line);stroke-width:1.5;stroke-dasharray:4 4"/>
+      <rect class="s-hl" x="253.33333333333337" y="14" width="140" height="48" rx="7"/>
+      <text class="s-tb" x="323.33333333333337" y="35" text-anchor="middle">Lock service</text>
+      <text class="s-tm" x="323.33333333333337" y="52" text-anchor="middle">Redis · etcd</text>
+      <path d="M323.33333333333337 62 V394" style="stroke:var(--line);stroke-width:1.5;stroke-dasharray:4 4"/>
+      <rect class="s-box" x="506.66666666666674" y="14" width="140" height="48" rx="7"/>
+      <text class="s-tb" x="576.6666666666667" y="35" text-anchor="middle">Client B</text>
+      <text class="s-tm" x="576.6666666666667" y="52" text-anchor="middle">worker 2</text>
+      <path d="M576.6666666666667 62 V394" style="stroke:var(--line);stroke-width:1.5;stroke-dasharray:4 4"/>
+      <rect class="s-disk" x="760.0" y="14" width="140" height="48" rx="7"/>
+      <text class="s-tb" x="830.0" y="35" text-anchor="middle">Storage</text>
+      <text class="s-tm" x="830.0" y="52" text-anchor="middle">database</text>
+      <path d="M830.0 62 V394" style="stroke:var(--line);stroke-width:1.5;stroke-dasharray:4 4"/>
+      <path d="M74.0 92 H317.33333333333337" style="stroke:var(--accent);stroke-width:1.8;fill:none;" marker-end="url(#fea)"/>
+      <text class="s-tm" x="196.66666666666669" y="85" text-anchor="middle" style="fill:var(--accent)">acquire</text>
+      <path d="M319.33333333333337 126 H76.0" style="stroke:var(--muted);stroke-width:1.8;fill:none;stroke-dasharray:5 4;" marker-end="url(#feb)"/>
+      <text class="s-tm" x="196.66666666666669" y="119" text-anchor="middle" style="fill:var(--muted)">OK, token 33</text>
+      <text class="s-tm" x="10.0" y="160" style="fill:var(--warn);font-weight:600">A bị GC pause 40 giây, lease 30 giây hết hạn</text>
+      <path d="M572.6666666666667 198 H329.33333333333337" style="stroke:var(--accent);stroke-width:1.8;fill:none;" marker-end="url(#fea)"/>
+      <text class="s-tm" x="450.00000000000006" y="191" text-anchor="middle" style="fill:var(--accent)">acquire</text>
+      <path d="M327.33333333333337 232 H570.6666666666667" style="stroke:var(--muted);stroke-width:1.8;fill:none;stroke-dasharray:5 4;" marker-end="url(#feb)"/>
+      <text class="s-tm" x="450.00000000000006" y="225" text-anchor="middle" style="fill:var(--muted)">OK, token 34</text>
+      <path d="M580.6666666666667 266 H824.0" style="stroke:var(--accent);stroke-width:1.8;fill:none;" marker-end="url(#fea)"/>
+      <text class="s-tm" x="703.3333333333334" y="259" text-anchor="middle" style="fill:var(--accent)">write (token 34)</text>
+      <path d="M826.0 300 H582.6666666666667" style="stroke:var(--muted);stroke-width:1.8;fill:none;stroke-dasharray:5 4;" marker-end="url(#feb)"/>
+      <text class="s-tm" x="703.3333333333334" y="293" text-anchor="middle" style="fill:var(--muted)">OK, ghi nhận 34</text>
+      <path d="M74.0 334 H824.0" style="stroke:var(--accent);stroke-width:1.8;fill:none;" marker-end="url(#fea)"/>
+      <text class="s-tm" x="450.0" y="327" text-anchor="middle" style="fill:var(--accent)">write (token 33)</text>
+      <path d="M826.0 368 H76.0" style="stroke:var(--bad);stroke-width:1.8;fill:none;" marker-end="url(#fec)"/>
+      <text class="s-tm" x="450.0" y="361" text-anchor="middle" style="fill:var(--bad)">từ chối: 33 nhỏ hơn 34</text>
+    </svg>
+    </div>
+    <figcaption>Không có fencing, lần ghi của A sẽ đè lên dữ liệu của B. Storage chỉ nhận token lớn hơn token đã thấy nên lần ghi cũ bị chặn.</figcaption>
+  </figure>
+<pre class="code"><code><span class="c1">// Each successful acquire returns a strictly increasing number</span>
+<span class="kd">const</span><span class="w"> </span><span class="nx">fencingToken</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="nx">redis</span><span class="p">.</span><span class="nf">incr</span><span class="p">(</span><span class="s2">"lock:invoice:fence"</span><span class="p">);</span>
+
+<span class="c1">// The storage accepts a write only if the token is newer than the last one it saw</span>
+<span class="kd">const</span><span class="w"> </span><span class="nx">res</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="nx">db</span><span class="p">.</span><span class="nf">query</span><span class="p">(</span>
+<span class="w">  </span><span class="s2">"UPDATE invoices SET pdf_url = $1, fence = $2 WHERE id = $3 AND fence &lt; $2"</span><span class="p">,</span>
+<span class="w">  </span><span class="p">[</span><span class="nx">url</span><span class="p">,</span><span class="w"> </span><span class="nx">fencingToken</span><span class="p">,</span><span class="w"> </span><span class="nx">invoiceId</span><span class="p">],</span>
+<span class="p">);</span>
+<span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">res</span><span class="p">.</span><span class="nx">rowCount</span><span class="w"> </span><span class="o">===</span><span class="w"> </span><span class="mf">0</span><span class="p">)</span><span class="w"> </span><span class="k">throw</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="ne">Error</span><span class="p">(</span><span class="s2">"Stale lock holder, write rejected"</span><span class="p">);</span></code></pre>
+  <p>Lock giúp <b>giảm</b> trùng lặp; fencing token ở phía lưu trữ mới <b>đảm bảo đúng</b>. etcd (revision) và ZooKeeper (zxid) cung cấp sẵn số tăng dần dùng làm fencing token.</p>
+</section>
+
+<section id="dl-redlock">
+  <h2><span class="n">05</span>Redlock</h2>
+  <p>Thuật toán của tác giả Redis để không phụ thuộc một node: dùng N node Redis <b>độc lập</b> (thường 5), lấy khóa trên từng node, coi là thành công nếu được <b>đa số</b> (ít nhất 3) trong thời gian ngắn hơn TTL. Thư viện Node.js: <code>redlock</code>.</p>
+  <div class="cmp">
+    <div><h4>Ủng hộ</h4>Chịu được một số node Redis chết; đủ tốt khi lock chỉ để tránh làm trùng việc (hiệu năng), không phải để đảm bảo đúng tuyệt đối.</div>
+    <div><h4>Phê bình (Martin Kleppmann, 2016)</h4>Dựa vào giả định về thời gian và đồng hồ; không có fencing token nên vẫn hỏng khi tiến trình bị dừng lâu. Cần đúng tuyệt đối thì dùng hệ thống đồng thuận (etcd, ZooKeeper) kèm fencing.</div>
+  </div>
+  <p>Cách nghĩ thực dụng: lock để <b>tiết kiệm công</b> (tránh hai máy cùng tính một báo cáo) thì Redis là đủ; lock để <b>giữ đúng dữ liệu</b> (tiền, tồn kho) thì đưa kiểm tra vào database hoặc dùng fencing.</p>
+</section>
+
+<section id="dl-others">
+  <h2><span class="n">06</span>etcd, ZooKeeper, PostgreSQL advisory lock</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>Công cụ</th><th>Cách hoạt động</th><th>Điểm mạnh</th></tr></thead>
+    <tbody>
+      <tr><td><b>etcd</b></td><td>Key gắn với lease, client gửi keep-alive; hết keep-alive thì key tự xóa. Revision tăng dần dùng làm fencing token.</td><td>Đồng thuận Raft, nhất quán mạnh; Kubernetes dùng cho leader election.</td></tr>
+      <tr><td><b>ZooKeeper</b></td><td>Tạo znode ephemeral sequential; ai có số nhỏ nhất giữ khóa, người khác theo dõi node đứng trước mình.</td><td>Đã được kiểm chứng lâu (Kafka bản cũ, Hadoop); công thức lock có sẵn trong Curator.</td></tr>
+      <tr><td><b>PostgreSQL advisory lock</b></td><td>Khóa theo một số nguyên do ứng dụng tự đặt nghĩa: <code>pg_try_advisory_xact_lock(hashtext('daily-report'))</code>.</td><td>Không cần thêm hạ tầng nếu đã có PostgreSQL; bản <code>_xact_</code> tự nhả khi transaction kết thúc.</td></tr>
+    </tbody>
+  </table></div>
+<pre class="code"><code><span class="c1">// PostgreSQL advisory lock: one runner for a scheduled job across all instances</span>
+<span class="kd">const</span><span class="w"> </span><span class="nx">client</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="nx">pool</span><span class="p">.</span><span class="nx">connect</span><span class="p">();</span>
+<span class="k">try</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">await</span><span class="w"> </span><span class="nx">client</span><span class="p">.</span><span class="nf">query</span><span class="p">(</span><span class="s2">"BEGIN"</span><span class="p">);</span>
+<span class="w">  </span><span class="kd">const</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">rows</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="nx">client</span><span class="p">.</span><span class="nf">query</span><span class="p">(</span>
+<span class="w">    </span><span class="s2">"SELECT pg_try_advisory_xact_lock(hashtext($1)) AS ok"</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="s2">"daily-report"</span><span class="p">],</span>
+<span class="w">  </span><span class="p">);</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">rows</span><span class="p">[</span><span class="mf">0</span><span class="p">].</span><span class="nx">ok</span><span class="p">)</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="nf">sendDailyReport</span><span class="p">(</span><span class="nx">client</span><span class="p">);</span><span class="w">   </span><span class="c1">// others skip immediately</span>
+<span class="w">  </span><span class="k">await</span><span class="w"> </span><span class="nx">client</span><span class="p">.</span><span class="nf">query</span><span class="p">(</span><span class="s2">"COMMIT"</span><span class="p">);</span><span class="w">                    </span><span class="c1">// lock released with the transaction</span>
+<span class="p">}</span><span class="w"> </span><span class="k">finally</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">client</span><span class="p">.</span><span class="nx">release</span><span class="p">();</span>
+<span class="p">}</span></code></pre>
+  <div class="note">Advisory lock dạng session (<code>pg_advisory_lock</code>) gắn với connection. Qua PgBouncer ở chế độ transaction pooling, connection bị dùng chung nên khóa có thể không như mong đợi; dùng bản <code>_xact_</code> trong transaction.</div>
+</section>
+
+<section id="dl-rules">
+  <h2><span class="n">07</span>Quy tắc dùng distributed lock an toàn</h2>
+  <ol class="steps">
+    <li><div><b>Luôn có TTL</b><div class="d">Tiến trình chết thì khóa phải tự nhả.</div></div></li>
+    <li><div><b>Nhả đúng chủ</b><div class="d">So token trước khi xóa, bằng thao tác atomic.</div></div></li>
+    <li><div><b>Gia hạn cho việc dài</b><div class="d">Gia hạn định kỳ (watchdog), dừng việc nếu gia hạn thất bại.</div></div></li>
+    <li><div><b>Chờ có giới hạn</b><div class="d">Thử lại vài lần với backoff, không chờ vô hạn.</div></div></li>
+    <li><div><b>Dữ liệu quan trọng thì thêm fencing hoặc kiểm tra ở database</b><div class="d">Đừng chỉ tin vào việc “mình đang giữ khóa”.</div></div></li>
+    <li><div><b>Hỏi lại xem có cần lock không</b><div class="d">Unique constraint, idempotency key hoặc một consumer cho mỗi key thường đơn giản và chắc chắn hơn.</div></div></li>
+  </ol>
+</section>
+<footer>Ghi chú học về đồng thời của Ryan · cập nhật 19/10/2026</footer>
+</main>
+</div>
