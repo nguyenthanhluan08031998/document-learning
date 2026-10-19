@@ -284,7 +284,7 @@ setInterval(relay, 1000);`}</Code>
             <div><span className="pl">Vấn đề</span>Kafka, RabbitMQ, JetStream đều có thể giao một message nhiều lần (at-least-once). Xử lý hai lần thì trừ tiền hai lần.</div>
             <div><span className="pl">Ý tưởng</span>Ghi lại id của message đã xử lý, trong cùng transaction với thay đổi nghiệp vụ; gặp lại id cũ thì bỏ qua.</div>
           </div>
-          <Code lang="ts">{`async function handle(msg: { id: string; orderId: string; amount: number }) {
+          <Code lang="ts">{`async function handle(msg: { id: string; customerId: string; orderId: string; amount: number }) {
   await db.transaction(async tx => {
     // Unique constraint on processed_messages.id rejects duplicates
     const inserted = await tx.query(
@@ -293,8 +293,10 @@ setInterval(relay, 1000);`}</Code>
     );
     if (inserted.rowCount === 0) return; // already handled
 
-    await tx.query("UPDATE wallets SET balance = balance - $1 WHERE order_id = $2",
-      [msg.amount, msg.orderId]);
+    // Pay the order from the customer's wallet
+    await tx.query("UPDATE wallets SET balance = balance - $1 WHERE customer_id = $2",
+      [msg.amount, msg.customerId]);
+    await tx.query("UPDATE orders SET status = 'paid' WHERE id = $1", [msg.orderId]);
   });
 }`}</Code>
           <div className="pp">
@@ -334,29 +336,30 @@ const summary = await readDb.collection("order_summaries").findOne({ customerId:
         <section id="ms-event-sourcing">
           <h2><span className="n">07</span>Event Sourcing <small className="vn">Lưu chuỗi sự kiện</small></h2>
           <div className="pp">
-            <div><span className="pl">Vấn đề</span>Chỉ lưu trạng thái hiện tại thì mất lịch sử: không biết số dư thay đổi thế nào, khó kiểm toán và khó dựng lại.</div>
+            <div><span className="pl">Vấn đề</span>Chỉ lưu trạng thái hiện tại thì mất lịch sử: không biết một khoản thanh toán đã được giữ, thu, hoàn bao nhiêu và lúc nào; khó đối soát và khó dựng lại.</div>
             <div><span className="pl">Ý tưởng</span>Lưu <b>mọi sự kiện</b> đã xảy ra theo thứ tự (chỉ thêm, không sửa). Trạng thái hiện tại là kết quả “gộp” các sự kiện.</div>
           </div>
-          <Code lang="ts">{`type AccountEvent =
-  | { type: "Opened"; owner: string }
-  | { type: "Deposited"; amount: number }
-  | { type: "Withdrawn"; amount: number };
+          <Code lang="ts">{`type PaymentEvent =
+  | { type: "Authorized"; orderId: string; amount: number }   // money held on the card
+  | { type: "Captured"; amount: number }                      // money actually taken
+  | { type: "Refunded"; amount: number };
 
-function rebuild(events: AccountEvent[]) {
+function rebuild(events: PaymentEvent[]) {
   // Fold events into current state
-  return events.reduce((acc, e) => {
+  return events.reduce((p, e) => {
     switch (e.type) {
-      case "Opened": return { owner: e.owner, balance: 0 };
-      case "Deposited": return { ...acc, balance: acc.balance + e.amount };
-      case "Withdrawn": return { ...acc, balance: acc.balance - e.amount };
+      case "Authorized": return { orderId: e.orderId, authorized: e.amount, captured: 0, refunded: 0 };
+      case "Captured":   return { ...p, captured: p.captured + e.amount };
+      case "Refunded":   return { ...p, refunded: p.refunded + e.amount };
     }
-  }, { owner: "", balance: 0 });
+  }, { orderId: "", authorized: 0, captured: 0, refunded: 0 });
 }
 
-const history: AccountEvent[] = await eventStore.load("account-7");
-const state = rebuild(history); // { owner: "An", balance: 1_200_000 }`}</Code>
+const history: PaymentEvent[] = await eventStore.load("payment-42");
+const state = rebuild(history);
+// { orderId: "42", authorized: 1_200_000, captured: 1_200_000, refunded: 200_000 }`}</Code>
           <div className="pp">
-            <div><span className="pl">Khi nào dùng</span>Tài chính, kiểm toán, hệ thống cần “du hành thời gian”. Kafka với retention vô hạn hoặc JetStream thường làm event store.</div>
+            <div><span className="pl">Khi nào dùng</span>Thanh toán, ví, đối soát, kiểm toán, hệ thống cần “du hành thời gian”. Kafka với retention vô hạn hoặc JetStream thường làm event store.</div>
             <div className="warnc"><span className="pl">Lưu ý</span>Phức tạp: cần snapshot khi chuỗi dài, đổi cấu trúc sự kiện cũ rất khó, truy vấn phải qua CQRS.</div>
           </div>
         </section>

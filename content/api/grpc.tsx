@@ -145,7 +145,7 @@ enum Status { STATUS_UNSPECIFIED = 0; PAID = 1; SHIPPED = 2; }`}</Code>
                   <td><b>Bidirectional</b></td>
                   <td>Nhiều</td>
                   <td>Nhiều, độc lập</td>
-                  <td>Chat, đồng bộ hai chiều</td>
+                  <td>Chat giữa khách và người bán, đồng bộ hai chiều</td>
                 </tr>
               </tbody>
             </table>

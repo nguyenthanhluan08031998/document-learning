@@ -231,30 +231,30 @@ const repo: UserRepo = new LoggedUserRepo(new CachedUserRepo(new DbUserRepo()));
             <div><span className="pl">Vấn đề</span>Hàng trăm nghìn đối tượng nhỏ cùng chứa một phần dữ liệu lặp lại, tốn bộ nhớ.</div>
             <div><span className="pl">Ý tưởng</span>Tách phần dữ liệu không đổi (intrinsic) ra dùng chung; mỗi đối tượng chỉ giữ phần riêng (extrinsic).</div>
           </div>
-          <Code lang="ts">{`// Shared, immutable part
-class TreeType {
-  constructor(readonly name: string, readonly texture: Uint8Array) {}
+          <Code lang="ts">{`// Shared, immutable part: product details are the same for every unit
+class ProductSpec {
+  constructor(readonly sku: string, readonly name: string, readonly image: Uint8Array) {}
 }
 
-class TreeTypeFactory {
-  private static cache = new Map<string, TreeType>();
-  static get(name: string): TreeType {
-    let t = this.cache.get(name);
-    if (!t) { t = new TreeType(name, loadTexture(name)); this.cache.set(name, t); }
-    return t;
+class ProductSpecFactory {
+  private static cache = new Map<string, ProductSpec>();
+  static get(sku: string): ProductSpec {
+    let s = this.cache.get(sku);
+    if (!s) { s = loadSpec(sku); this.cache.set(sku, s); }
+    return s;
   }
 }
 
-// Unique part per object: only coordinates and a reference
-class Tree {
-  constructor(readonly x: number, readonly y: number, readonly type: TreeType) {}
+// Unique part per object: only the serial number, shelf and a reference
+class StockUnit {
+  constructor(readonly serial: string, readonly shelf: string, readonly spec: ProductSpec) {}
 }
 
-const forest = Array.from({ length: 100_000 }, (_, i) =>
-  new Tree(i % 500, Math.floor(i / 500), TreeTypeFactory.get(i % 2 ? "oak" : "pine")));
-// 100k trees share only 2 textures`}</Code>
+const units = Array.from({ length: 100_000 }, (_, i) =>
+  new StockUnit(\`SN-\${i}\`, \`A-\${i % 200}\`, ProductSpecFactory.get(i % 2 ? "PHONE-01" : "CASE-02")));
+// 100k units in the warehouse share only 2 product specs`}</Code>
           <div className="pp">
-            <div><span className="pl">Khi nào dùng</span>Game, trình soạn thảo văn bản (định dạng ký tự), bản đồ, cache chuỗi lặp lại.</div>
+            <div><span className="pl">Khi nào dùng</span>Tồn kho theo từng serial, danh sách sản phẩm lặp lại nhiều lần, game, bản đồ, cache chuỗi lặp lại.</div>
             <div className="warnc"><span className="pl">Lưu ý</span>Chỉ đáng làm khi đo thấy vấn đề bộ nhớ thật; code phức tạp hơn đáng kể.</div>
           </div>
         </section>
@@ -264,22 +264,23 @@ const forest = Array.from({ length: 100_000 }, (_, i) =>
             <div><span className="pl">Vấn đề</span>Cần kiểm soát truy cập tới một đối tượng: tải trễ, kiểm tra quyền, gọi từ xa, giới hạn tần suất.</div>
             <div><span className="pl">Ý tưởng</span>Một đối tượng cùng interface đứng trước đối tượng thật và quyết định có chuyển lời gọi vào hay không.</div>
           </div>
-          <Code lang="ts">{`interface Document { read(): string; }
+          <Code lang="ts">{`interface InvoiceFile { download(): Uint8Array; }
 
-class RealDocument implements Document {
-  private content: string;
-  constructor(path: string) { this.content = loadHugeFile(path); } // expensive
-  read() { return this.content; }
+class RenderedInvoice implements InvoiceFile {
+  private pdf: Uint8Array;
+  constructor(orderId: string) { this.pdf = renderInvoicePdf(orderId); } // expensive
+  download() { return this.pdf; }
 }
 
-class SecureLazyDocument implements Document {
-  private real?: RealDocument;
-  constructor(private path: string, private user: User) {}
+class SecureLazyInvoice implements InvoiceFile {
+  private real?: RenderedInvoice;
+  constructor(private order: Order, private user: User) {}
 
-  read() {
-    if (!this.user.roles.includes("viewer")) throw new Error("Forbidden");
-    this.real ??= new RealDocument(this.path); // load only when first needed
-    return this.real.read();
+  download() {
+    // Only the buyer or staff may see the invoice
+    if (this.user.id !== this.order.customerId && !this.user.roles.includes("staff")) throw new Error("Forbidden");
+    this.real ??= new RenderedInvoice(this.order.id); // render only when first needed
+    return this.real.download();
   }
 }
 

@@ -51,21 +51,26 @@ await orders.updateOne({ _id: id }, { $inc: { views: 1 } });  // MongoDB $inc`}<
         <section id="lk-pessimistic">
           <h2><span className="n">02</span>Pessimistic lock: khóa trước, sửa sau</h2>
           <p>Giả định xung đột <b>sẽ xảy ra</b>, nên khóa dòng ngay khi đọc. Transaction khác muốn khóa cùng dòng phải <b>chờ</b> tới khi transaction đầu commit hoặc rollback.</p>
-          <Code lang="ts">{`async function transfer(fromId: string, toId: string, amount: number) {
+          <Code lang="ts">{`// Checkout: reserve stock for every item in the cart at once
+async function reserveStock(orderId: string, items: { sku: string; qty: number }[]) {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
-    // Lock both rows in a fixed order (by id) to avoid deadlocks
-    const ids = [fromId, toId].sort();
+    // Lock all product rows in a fixed order (by sku) to avoid deadlocks
+    const skus = items.map(i => i.sku).sort();
     const { rows } = await client.query(
-      "SELECT id, balance FROM accounts WHERE id = ANY($1) ORDER BY id FOR UPDATE",
-      [ids],
+      "SELECT sku, stock FROM products WHERE sku = ANY($1) ORDER BY sku FOR UPDATE",
+      [skus],
     );
-    const from = rows.find(r => r.id === fromId)!;
-    if (from.balance < amount) throw new Error("Insufficient funds");
+    for (const item of items) {
+      const row = rows.find(r => r.sku === item.sku)!;
+      if (row.stock < item.qty) throw new Error(\`Out of stock: \${item.sku}\`);
+    }
 
-    await client.query("UPDATE accounts SET balance = balance - $1 WHERE id = $2", [amount, fromId]);
-    await client.query("UPDATE accounts SET balance = balance + $1 WHERE id = $2", [amount, toId]);
+    for (const item of items) {
+      await client.query("UPDATE products SET stock = stock - $1 WHERE sku = $2", [item.qty, item.sku]);
+    }
+    await client.query("UPDATE orders SET status = 'reserved' WHERE id = $1", [orderId]);
     await client.query("COMMIT");          // locks are released here
   } catch (e) {
     await client.query("ROLLBACK");
@@ -125,12 +130,12 @@ await orders.updateOne({ _id: id }, { $inc: { views: 1 } });  // MongoDB $inc`}<
                 <tr>
                   <td className="m">FOR UPDATE</td>
                   <td><b>Đứng chờ</b> tới khi dòng được nhả</td>
-                  <td>Bắt buộc phải xử lý đúng dòng đó (chuyển tiền)</td>
+                  <td>Bắt buộc phải xử lý đúng dòng đó (giữ hàng khi checkout)</td>
                 </tr>
                 <tr>
                   <td className="m">FOR UPDATE NOWAIT</td>
                   <td><b>Báo lỗi ngay</b> (mã <code>55P03</code>)</td>
-                  <td>Báo người dùng “ghế này đang có người đặt”</td>
+                  <td>Báo khách “sản phẩm flash sale đang có người thanh toán”</td>
                 </tr>
                 <tr>
                   <td className="m">FOR UPDATE SKIP LOCKED</td>
@@ -142,9 +147,9 @@ await orders.updateOne({ _id: id }, { $inc: { views: 1 } });  // MongoDB $inc`}<
           </div>
           <Code lang="ts">{`// NOWAIT: fail immediately if someone else holds the lock
 try {
-  await client.query("SELECT * FROM seats WHERE id = $1 FOR UPDATE NOWAIT", [seatId]);
+  await client.query("SELECT * FROM flash_sale_slots WHERE id = $1 FOR UPDATE NOWAIT", [slotId]);
 } catch (e: any) {
-  if (e.code === "55P03") throw new Error("Seat is being booked by someone else");
+  if (e.code === "55P03") throw new Error("Item is being checked out by someone else");
   throw e;
 }
 
@@ -210,7 +215,7 @@ await pool.query(\`
 \`);`}</Code>
           <p>Hợp với việc chạy lâu. Đổi lại phải có tiến trình dọn job bị kẹt, và việc xử lý nên idempotent vì một job có thể bị chạy lại sau khi bị trả về.</p>
           <div className="pp">
-            <div><span className="pl">Hay dùng cho</span>Job queue trong PostgreSQL (pg-boss, Graphile Worker, Solid Queue), chia đơn hàng cho nhiều instance, phát mã giảm giá hoặc vé có hạn, xử lý bảng outbox bằng nhiều relay.</div>
+            <div><span className="pl">Hay dùng cho</span>Job queue trong PostgreSQL (pg-boss, Graphile Worker, Solid Queue), chia đơn hàng cho nhiều instance, phát mã giảm giá hoặc suất flash sale có hạn, xử lý bảng outbox bằng nhiều relay.</div>
             <div className="warnc"><span className="pl">Lưu ý</span>Kết quả cố tình bỏ sót dòng bị khóa: không dùng để đọc báo cáo hay đếm. Phải nằm trong transaction. Cần index trên cột lọc (<code>status, created_at</code>). Hỗ trợ từ PostgreSQL 9.5 và MySQL 8.0.</div>
           </div>
         </section>
@@ -218,7 +223,7 @@ await pool.query(\`
           <h2><span className="n">04</span>Deadlock</h2>
           <p>Transaction A khóa dòng 1 rồi chờ dòng 2; transaction B khóa dòng 2 rồi chờ dòng 1. Cả hai chờ nhau mãi. PostgreSQL phát hiện sau <code>deadlock_timeout</code> (mặc định 1 giây) và hủy một bên với lỗi <code>40P01</code>.</p>
           <ul className="plain">
-            <li><b>Khóa theo thứ tự cố định</b>, ví dụ luôn theo id tăng dần như hàm <code>transfer</code> ở trên.</li>
+            <li><b>Khóa theo thứ tự cố định</b>, ví dụ luôn theo id tăng dần như hàm <code>reserveStock</code> ở trên (theo sku).</li>
             <li>Khóa ít dòng nhất có thể, giữ transaction ngắn.</li>
             <li>Bắt lỗi deadlock và <b>retry</b> cả transaction.</li>
           </ul>
@@ -298,7 +303,7 @@ await pool.query(\`
                 </tr>
                 <tr>
                   <td><b>Ví dụ</b></td>
-                  <td>Chuyển tiền, giữ ghế khi thanh toán</td>
+                  <td>Trừ tồn kho, giữ hàng khi thanh toán</td>
                   <td>Sửa hồ sơ, sửa bài viết, cấu hình</td>
                 </tr>
               </tbody>

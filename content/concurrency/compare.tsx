@@ -39,7 +39,7 @@ export default function ComparePage() {
                   <td>Chờ (hoặc NOWAIT / SKIP LOCKED)</td>
                   <td>Nhiều dòng trong một DB</td>
                   <td>Trung bình</td>
-                  <td>Chuyển tiền, giữ ghế; xung đột thường xuyên</td>
+                  <td>Trừ tồn kho, giữ hàng flash sale; xung đột thường xuyên</td>
                 </tr>
                 <tr>
                   <td><b>Serializable</b></td>
@@ -101,7 +101,7 @@ export default function ComparePage() {
                 <tr>
                   <td><b>Unique constraint</b></td>
                   <td>Để database từ chối bản ghi trùng</td>
-                  <td><code>UNIQUE(seat_id, show_id)</code>: hai người đặt cùng ghế thì một người nhận lỗi</td>
+                  <td><code>UNIQUE(voucher_code, customer_id)</code>: một khách dùng cùng voucher hai lần thì lần sau nhận lỗi</td>
                 </tr>
                 <tr>
                   <td><b>Idempotency key</b></td>
@@ -116,7 +116,7 @@ export default function ComparePage() {
                 <tr>
                   <td><b>Single writer theo key</b></td>
                   <td>Mọi thay đổi của một key đi qua đúng một consumer, tuần tự</td>
-                  <td>Kafka partition theo <code>accountId</code>; RabbitMQ <code>x-single-active-consumer</code></td>
+                  <td>Kafka partition theo <code>orderId</code>; RabbitMQ <code>x-single-active-consumer</code></td>
                 </tr>
                 <tr>
                   <td><b>Append-only</b></td>
@@ -126,7 +126,7 @@ export default function ComparePage() {
                 <tr>
                   <td><b>Đặt chỗ có hạn</b></td>
                   <td>Giữ tạm có thời hạn, hết hạn tự nhả</td>
-                  <td>Giữ ghế 10 phút khi thanh toán (cột <code>hold_until</code>)</td>
+                  <td>Giữ hàng trong giỏ 10 phút khi thanh toán (cột <code>hold_until</code>)</td>
                 </tr>
               </tbody>
             </table>

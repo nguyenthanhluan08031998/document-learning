@@ -18,7 +18,7 @@ export default function OverviewPage() {
         <header className="hero">
           <div className="eyebrow">đồng thời · tổng quan</div>
           <h1>Khi hai request cùng sửa một dữ liệu</h1>
-          <p className="lede">Server xử lý nhiều request song song, nhiều instance cùng chạy, nhiều consumer cùng đọc queue. Khi chúng chạm vào cùng một bản ghi (tồn kho, số dư, ghế ngồi), kết quả có thể sai mà không có lỗi nào được báo. Lock và các cơ chế liên quan sinh ra để ngăn điều đó.</p>
+          <p className="lede">Server xử lý nhiều request song song, nhiều instance cùng chạy, nhiều consumer cùng đọc queue. Khi chúng chạm vào cùng một bản ghi (tồn kho, số dư ví, lượt dùng voucher), kết quả có thể sai mà không có lỗi nào được báo. Lock và các cơ chế liên quan sinh ra để ngăn điều đó.</p>
           <div className="tape" aria-hidden="true">
             <div>read</div>
             <div>read</div>
@@ -75,12 +75,12 @@ async function buy(productId: string) {
                 <tr>
                   <td><b>Phantom read</b></td>
                   <td>Chạy cùng một truy vấn hai lần, lần sau có thêm hoặc mất dòng</td>
-                  <td>Đếm số vé đã bán thay đổi giữa chừng</td>
+                  <td>Đếm số đơn đã bán thay đổi giữa chừng</td>
                 </tr>
                 <tr>
                   <td><b>Write skew</b></td>
                   <td>Hai transaction đọc cùng điều kiện, mỗi bên sửa một dòng khác nhau, kết quả chung vi phạm quy tắc</td>
-                  <td>Hai bác sĩ cùng xin nghỉ vì thấy “còn người trực”, cuối cùng không ai trực</td>
+                  <td>Đơn chỉ được giảm tối đa 50%: hai voucher áp cùng lúc, mỗi bên kiểm tra thấy “còn dư”, cộng lại giảm quá 50%</td>
                 </tr>
                 <tr>
                   <td><b>Double processing</b></td>

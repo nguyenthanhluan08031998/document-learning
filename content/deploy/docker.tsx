@@ -32,14 +32,14 @@ export default function DockerPage() {
         <section id="dk-file">
           <h2><span className="n">02</span>Dockerfile</h2>
           <p>Build hai giai đoạn: giai đoạn đầu cài đủ thư viện để build, giai đoạn sau chỉ chép kết quả sang image nhỏ để chạy.</p>
-          <Code lang="dockerfile">{`FROM node:20-alpine AS build
+          <Code lang="dockerfile">{`FROM node:22-alpine AS build
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 COPY . .
-RUN npm run build
+RUN npm run build && npm prune --omit=dev   # drop devDependencies before copying
 
-FROM node:20-alpine
+FROM node:22-alpine
 WORKDIR /app
 ENV NODE_ENV=production
 COPY --from=build /app/dist ./dist

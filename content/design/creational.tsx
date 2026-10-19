@@ -118,34 +118,34 @@ await createNotifier("sms").send("0901...", "Đơn hàng đã giao");`}</Code>
         <section id="cr-abstract-factory">
           <h2><span className="n">03</span>Abstract Factory <small className="vn">Nhà máy trừu tượng</small></h2>
           <div className="pp">
-            <div><span className="pl">Vấn đề</span>Cần tạo cả một <b>bộ</b> đối tượng đi cùng nhau (ví dụ storage + queue của AWS, hoặc của GCP) và không được trộn lẫn hai bộ.</div>
+            <div><span className="pl">Vấn đề</span>Cần tạo cả một <b>bộ</b> đối tượng đi cùng nhau (ví dụ hàm thu tiền + hàm kiểm tra webhook của VNPay, hoặc của Stripe) và không được trộn lẫn hai bộ.</div>
             <div><span className="pl">Ý tưởng</span>Một interface factory có nhiều phương thức tạo, mỗi hiện thực tạo ra một bộ đồng nhất.</div>
           </div>
-          <Code lang="ts">{`interface Storage { put(key: string, data: Buffer): Promise<void>; }
-interface Queue { publish(msg: string): Promise<void>; }
+          <Code lang="ts">{`interface Charger { charge(orderId: string, amount: number): Promise<string>; }
+interface WebhookVerifier { verify(body: string, signature: string): boolean; }
 
-interface CloudFactory {
-  createStorage(): Storage;
-  createQueue(): Queue;
+interface PaymentProviderFactory {
+  createCharger(): Charger;
+  createWebhookVerifier(): WebhookVerifier;
 }
 
-class AwsFactory implements CloudFactory {
-  createStorage(): Storage { return new S3Storage(); }
-  createQueue(): Queue { return new SqsQueue(); }
+class VnpayFactory implements PaymentProviderFactory {
+  createCharger(): Charger { return new VnpayCharger(); }
+  createWebhookVerifier(): WebhookVerifier { return new VnpayHmacVerifier(); }
 }
-class GcpFactory implements CloudFactory {
-  createStorage(): Storage { return new GcsStorage(); }
-  createQueue(): Queue { return new PubSubQueue(); }
+class StripeFactory implements PaymentProviderFactory {
+  createCharger(): Charger { return new StripeCharger(); }
+  createWebhookVerifier(): WebhookVerifier { return new StripeSignatureVerifier(); }
 }
 
 // Application code depends only on the abstract factory
-function bootstrap(cloud: CloudFactory) {
-  const storage = cloud.createStorage();
-  const queue = cloud.createQueue();
-  return { storage, queue };
+function bootstrap(provider: PaymentProviderFactory) {
+  const charger = provider.createCharger();
+  const verifier = provider.createWebhookVerifier();   // always from the same provider
+  return { charger, verifier };
 }`}</Code>
           <div className="pp">
-            <div><span className="pl">Khi nào dùng</span>Nhiều họ sản phẩm thay thế nhau trọn gói: theme giao diện, nhà cung cấp cloud, môi trường test và production.</div>
+            <div><span className="pl">Khi nào dùng</span>Nhiều họ sản phẩm thay thế nhau trọn gói: cổng thanh toán, nhà cung cấp cloud, theme giao diện, môi trường test và production.</div>
             <div className="warnc"><span className="pl">Lưu ý</span>Thêm một loại sản phẩm mới phải sửa interface và mọi factory.</div>
           </div>
         </section>

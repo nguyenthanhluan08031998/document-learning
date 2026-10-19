@@ -93,16 +93,16 @@ const totalDiscount = (o: Order) =>
         <section id="pr-lsp">
           <h2><span className="n">04</span>Liskov Substitution</h2>
           <p>Lớp con phải <b>thay được lớp cha</b> mà không làm sai chương trình: không đòi hỏi thêm điều kiện đầu vào, không trả về ít hơn điều đã hứa, không ném lỗi bất ngờ.</p>
-          <Code lang="ts">{`class FileStorage { write(path: string, data: string) { /* ... */ } }
+          <Code lang="ts">{`class PaymentMethod { refund(orderId: string, amount: number) { /* send money back */ } }
 
-// Violation: callers of FileStorage do not expect write() to throw
-class ReadOnlyStorage extends FileStorage {
-  write() { throw new Error("read only"); }
+// Violation: callers of PaymentMethod do not expect refund() to throw
+class CashOnDelivery extends PaymentMethod {
+  override refund(): never { throw new Error("COD cannot be refunded online"); }
 }
 
 // Better: model the capability explicitly
-interface Readable { read(path: string): string; }
-interface Writable { write(path: string, data: string): void; }`}</Code>
+interface Chargeable { charge(orderId: string, amount: number): Promise<void>; }
+interface Refundable { refund(orderId: string, amount: number): Promise<void>; }`}</Code>
         </section>
         <section id="pr-isp">
           <h2><span className="n">05</span>Interface Segregation</h2>
@@ -111,8 +111,8 @@ interface Writable { write(path: string, data: string): void; }`}</Code>
 interface UserReader { findById(id: string): Promise<User | null>; }
 interface UserWriter { save(u: User): Promise<void>; }
 
-// A report job only needs reading, so tests only mock one method
-class ActivityReport { constructor(private users: UserReader) {} }`}</Code>
+// A customer report job only needs reading, so tests only mock one method
+class CustomerReport { constructor(private users: UserReader) {} }`}</Code>
         </section>
         <section id="pr-dip">
           <h2><span className="n">06</span>Dependency Inversion</h2>

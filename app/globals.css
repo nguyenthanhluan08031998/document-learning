@@ -68,3 +68,35 @@ main, .wrap.single main { max-width: none; }
 p, .lede { max-width: none; }
 /* Diagrams are drawn 900 units wide; never scale them past their natural size */
 .fig svg { max-width: 900px; margin-inline: auto; }
+
+/* Second header row: groups inside the active area */
+.areanav { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+.areanav::-webkit-scrollbar { display: none; }
+.areanav a { flex: none; display: flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 600; color: var(--muted);
+  text-decoration: none; padding: 5px 12px; border: 1px solid var(--line); border-radius: 99px; background: var(--bg); white-space: nowrap; }
+.areanav a:hover { color: var(--ink); }
+.areanav a[aria-current] { color: var(--ink); background: var(--surface); border-color: var(--muted); }
+.areanav a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.areanav + .subnav { margin-top: 6px; }
+
+/* Area cards on the home page */
+.g-title { color: inherit; text-decoration: none; }
+.g-title:hover { text-decoration: underline; }
+.g-item b { display: flex; align-items: center; gap: 8px; }
+.empty { color: var(--muted); font-style: italic; margin: 8px 0 0; }
+.groups { align-items: start; }
+
+/* Git group colour */
+.dot.git { background: var(--bad); }
+.subnav[data-group="git"] { --grp: var(--bad); }
+.g-git .g-tag { background: var(--bad-soft); color: var(--bad); }
+.g-git .g-item:hover { border-color: var(--bad); }
+
+/* Database group colour */
+:root { --db: #7a4fa8; --db-soft: #efe6f7; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --db: #c49ae8; --db-soft: #2c1f3a; } }
+:root[data-theme="dark"] { --db: #c49ae8; --db-soft: #2c1f3a; }
+.dot.db { background: var(--db); }
+.subnav[data-group="db"] { --grp: var(--db); }
+.g-db .g-tag { background: var(--db-soft); color: var(--db); }
+.g-db .g-item:hover { border-color: var(--db); }

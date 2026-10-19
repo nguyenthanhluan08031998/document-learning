@@ -222,27 +222,28 @@ class CheckoutForm {
             <div><span className="pl">Vấn đề</span>Cần lưu và khôi phục trạng thái của đối tượng mà không để bên ngoài sửa trực tiếp nội tạng của nó.</div>
             <div><span className="pl">Ý tưởng</span>Đối tượng tự xuất một bản chụp trạng thái (chỉ đọc) và tự khôi phục từ bản chụp đó.</div>
           </div>
-          <Code lang="ts">{`class Editor {
-  private text = "";
-  private cursor = 0;
+          <Code lang="ts">{`class Cart {
+  private items = new Map<string, number>();   // sku -> quantity
+  private voucher?: string;
 
-  type(s: string) { this.text += s; this.cursor = this.text.length; }
+  add(sku: string, qty = 1) { this.items.set(sku, (this.items.get(sku) ?? 0) + qty); }
+  applyVoucher(code: string) { this.voucher = code; }
 
   save() {
-    // Snapshot is immutable and opaque to callers
-    return Object.freeze({ text: this.text, cursor: this.cursor });
+    // Snapshot is a read-only copy; callers cannot change the cart through it
+    return Object.freeze({ items: new Map(this.items) as ReadonlyMap<string, number>, voucher: this.voucher });
   }
-  restore(m: ReturnType<Editor["save"]>) { this.text = m.text; this.cursor = m.cursor; }
+  restore(m: ReturnType<Cart["save"]>) { this.items = new Map(m.items); this.voucher = m.voucher; }
 }
 
-const ed = new Editor();
-const snapshots = [];
-ed.type("Xin ");
-snapshots.push(ed.save());
-ed.type("chàoo");          // typo we want to undo
-ed.restore(snapshots.pop()!);`}</Code>
+const cart = new Cart();
+const undoStack: ReturnType<Cart["save"]>[] = [];
+cart.add("PHONE-01");
+undoStack.push(cart.save());
+cart.add("CASE-02", 3);          // added by mistake, customer clicks "Undo"
+cart.restore(undoStack.pop()!);`}</Code>
           <div className="pp">
-            <div><span className="pl">Khi nào dùng</span>Undo, lưu nháp, checkpoint trong game, rollback cấu hình.</div>
+            <div><span className="pl">Khi nào dùng</span>Hoàn tác thao tác trên giỏ hàng, lưu nháp đơn hàng, rollback cấu hình.</div>
             <div className="warnc"><span className="pl">Lưu ý</span>Bản chụp lớn và nhiều thì tốn bộ nhớ; cân nhắc lưu chênh lệch hoặc giới hạn số bản.</div>
           </div>
         </section>
@@ -373,34 +374,37 @@ class CsvProductImporter extends DataImporter<Product> {
             <div><span className="pl">Vấn đề</span>Cần thêm nhiều thao tác mới (xuất JSON, tính giá, kiểm tra) lên một cấu trúc đối tượng ổn định mà không sửa từng lớp.</div>
             <div><span className="pl">Ý tưởng</span>Đưa mỗi thao tác vào một visitor có hàm riêng cho từng loại phần tử. Trong TypeScript, discriminated union kèm switch đạt cùng mục tiêu gọn hơn.</div>
           </div>
-          <Code lang="ts">{`type Node =
-  | { kind: "num"; value: number }
-  | { kind: "add"; left: Node; right: Node }
-  | { kind: "mul"; left: Node; right: Node };
+          <Code lang="ts">{`type CartItem =
+  | { kind: "product"; name: string; price: number }
+  | { kind: "bundle"; name: string; items: CartItem[]; discount: number }   // combo, e.g. 10% off
+  | { kind: "gift"; name: string };
 
-// Each "visitor" is just a function that handles every node kind
-const evaluate = (n: Node): number => {
-  switch (n.kind) {
-    case "num": return n.value;
-    case "add": return evaluate(n.left) + evaluate(n.right);
-    case "mul": return evaluate(n.left) * evaluate(n.right);
+// Each "visitor" is just a function that handles every item kind
+const price = (i: CartItem): number => {
+  switch (i.kind) {
+    case "product": return i.price;
+    case "bundle":  return i.items.reduce((sum, x) => sum + price(x), 0) * (1 - i.discount);
+    case "gift":    return 0;
   }
 };
 
-const print = (n: Node): string => {
-  switch (n.kind) {
-    case "num": return String(n.value);
-    case "add": return \`(\${print(n.left)} + \${print(n.right)})\`;
-    case "mul": return \`\${print(n.left)} * \${print(n.right)}\`;
+const describe = (i: CartItem): string => {
+  switch (i.kind) {
+    case "product": return i.name;
+    case "bundle":  return \`\${i.name} [\${i.items.map(describe).join(", ")}]\`;
+    case "gift":    return \`\${i.name} (quà tặng)\`;
   }
 };
 
-const expr: Node = { kind: "mul", left: { kind: "num", value: 2 },
-  right: { kind: "add", left: { kind: "num", value: 3 }, right: { kind: "num", value: 4 } } };
-print(expr);    // 2 * (3 + 4)
-evaluate(expr); // 14`}</Code>
+const combo: CartItem = { kind: "bundle", name: "Combo học tập", discount: 0.1, items: [
+  { kind: "product", name: "Laptop", price: 20_000_000 },
+  { kind: "product", name: "Chuột", price: 500_000 },
+  { kind: "gift", name: "Túi chống sốc" },
+] };
+describe(combo); // Combo học tập [Laptop, Chuột, Túi chống sốc (quà tặng)]
+price(combo);    // 18450000`}</Code>
           <div className="pp">
-            <div><span className="pl">Khi nào dùng</span>AST của compiler/linter, xuất một cấu trúc ra nhiều định dạng.</div>
+            <div><span className="pl">Khi nào dùng</span>Cùng một giỏ hàng cần tính giá, in hoá đơn, xuất JSON; AST của compiler, linter.</div>
             <div className="warnc"><span className="pl">Lưu ý</span>Thêm loại phần tử mới thì phải sửa mọi visitor. Với TypeScript, bật kiểm tra exhaustive để compiler nhắc.</div>
           </div>
         </section>

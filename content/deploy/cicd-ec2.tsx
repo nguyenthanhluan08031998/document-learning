@@ -56,7 +56,9 @@ jobs:
       - uses: actions/checkout@v4
       - run: npm ci && npm test
       - uses: aws-actions/configure-aws-credentials@v4
-        with: { role-to-assume: \${{ secrets.AWS_ROLE }}, aws-region: ap-southeast-1 }
+        with:
+          role-to-assume: \${{ secrets.AWS_ROLE }}
+          aws-region: ap-southeast-1
       - uses: aws-actions/amazon-ecr-login@v2
         id: ecr
       - run: |

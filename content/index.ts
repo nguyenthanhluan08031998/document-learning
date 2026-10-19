@@ -1,6 +1,15 @@
 import type { ComponentType } from "react";
+import dbCompare from "./db/compare";
+import dbDynamodb from "./db/dynamodb";
+import dbMongodb from "./db/mongodb";
+import dbMysql from "./db/mysql";
+import dbPostgresql from "./db/postgresql";
 import deployCicdEc2 from "./deploy/cicd-ec2";
 import deployDocker from "./deploy/docker";
+import fe from "./fe";
+import git from "./git";
+import gitMergeRebase from "./git/merge-rebase";
+import gitWorkflow from "./git/workflow";
 import apiCompare from "./api/compare";
 import apiGraphql from "./api/graphql";
 import apiGrpc from "./api/grpc";
@@ -17,7 +26,7 @@ import designMicroservice from "./design/microservice";
 import designOop from "./design/oop";
 import designPrinciples from "./design/principles";
 import designStructural from "./design/structural";
-import home from "./home";
+import be from "./be";
 import messagingCompare from "./messaging/compare";
 import messagingKafka from "./messaging/kafka";
 import messagingNats from "./messaging/nats";
@@ -27,7 +36,7 @@ import operationsLogging from "./operations/logging";
 import operationsObservability from "./operations/observability";
 import operationsStructuredLogging from "./operations/structured-logging";
 
-// Page body components keyed by "group/slug" ("home" for the overview)
+// Page body components keyed by "group/slug", plus "<area>" for an area overview
 export const PAGES: Record<string, ComponentType> = {
   "api/compare": apiCompare,
   "api/graphql": apiGraphql,
@@ -45,13 +54,22 @@ export const PAGES: Record<string, ComponentType> = {
   "design/oop": designOop,
   "design/principles": designPrinciples,
   "design/structural": designStructural,
-  "home": home,
+  "be": be,
   "messaging/compare": messagingCompare,
   "messaging/kafka": messagingKafka,
   "messaging/nats": messagingNats,
   "messaging/rabbitmq": messagingRabbitmq,
+  "db/compare": dbCompare,
+  "db/dynamodb": dbDynamodb,
+  "db/mongodb": dbMongodb,
+  "db/mysql": dbMysql,
+  "db/postgresql": dbPostgresql,
   "deploy/cicd-ec2": deployCicdEc2,
   "deploy/docker": deployDocker,
+  "fe": fe,
+  "git": git,
+  "git/merge-rebase": gitMergeRebase,
+  "git/workflow": gitWorkflow,
   "operations/build-logger": operationsBuildLogger,
   "operations/logging": operationsLogging,
   "operations/observability": operationsObservability,

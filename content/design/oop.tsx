@@ -131,37 +131,39 @@ class Customer {
         </section>
         <section id="oop-encap">
           <h2><span className="n">03</span>{"Đóng gói & access modifier"}</h2>
-          <Code lang="ts">{`class BankAccount {
-  readonly id: string;              // set once, never reassigned
-  #balance = 0;                     // truly private at runtime (JS private field)
-  protected history: number[] = []; // visible to subclasses
-  private static fee = 1_000;       // private to the class
+          <Code lang="ts">{`// Customer wallet used at checkout
+class Wallet {
+  readonly customerId: string;          // set once, never reassigned
+  #balance = 0;                         // truly private at runtime (JS private field)
+  protected history: number[] = [];     // visible to subclasses
+  private static MAX_BALANCE = 50_000_000;  // private to the class
 
-  constructor(id: string) { this.id = id; }
+  constructor(customerId: string) { this.customerId = customerId; }
 
   // Getter: read-only view of internal state
   get balance() { return this.#balance; }
 
   // State changes only through methods that enforce rules
-  deposit(amount: number) {
+  topUp(amount: number) {
     if (amount <= 0) throw new Error("Amount must be positive");
+    if (this.#balance + amount > Wallet.MAX_BALANCE) throw new Error("Wallet limit exceeded");
     this.#balance += amount;
     this.history.push(amount);
   }
 
-  withdraw(amount: number) {
-    const total = amount + BankAccount.fee;
-    if (total > this.#balance) throw new Error("Insufficient funds");
-    this.#balance -= total;
-    this.history.push(-total);
+  pay(orderTotal: number) {
+    if (orderTotal > this.#balance) throw new Error("Insufficient balance");
+    this.#balance -= orderTotal;
+    this.history.push(-orderTotal);
   }
 }
 
-const acc = new BankAccount("A-1");
-acc.deposit(500_000);
-acc.balance;          // 500000
-// acc.balance = 0;   // error: no setter
-// acc.#balance;      // error: private field`}</Code>
+const wallet = new Wallet("C-1");
+wallet.topUp(500_000);
+wallet.pay(350_000);
+wallet.balance;          // 150000
+// wallet.balance = 0;   // error: no setter
+// wallet.#balance;      // error: private field`}</Code>
           <div className="tbl">
             <table>
               <thead>
@@ -210,7 +212,7 @@ acc.balance;          // 500000
               </tbody>
             </table>
           </div>
-          <div className="note tip"><b>Nguyên tắc:</b> mặc định để <code>private</code>, chỉ mở ra khi thật cần. Không tạo getter/setter cho mọi field theo phản xạ; method nên thể hiện hành động nghiệp vụ (<code>deposit</code>) thay vì <code>setBalance</code>.</div>
+          <div className="note tip"><b>Nguyên tắc:</b> mặc định để <code>private</code>, chỉ mở ra khi thật cần. Không tạo getter/setter cho mọi field theo phản xạ; method nên thể hiện hành động nghiệp vụ (<code>topUp</code>, <code>pay</code>) thay vì <code>setBalance</code>.</div>
         </section>
         <section id="oop-static">
           <h2><span className="n">04</span>Static: thuộc về class, không thuộc về object</h2>
@@ -319,30 +321,31 @@ Order.fromJson('{"items":["PHO-001"]}');`}</Code>
         </section>
         <section id="oop-inherit">
           <h2><span className="n">05</span>Kế thừa</h2>
-          <Code lang="ts">{`class Employee {
-  constructor(public name: string, protected baseSalary: number) {}
+          <Code lang="ts">{`class Customer {
+  constructor(public name: string, protected points: number) {}
 
-  salary(): number { return this.baseSalary; }
-  describe() { return \`\${this.name}: \${this.salary()} VND\`; }
+  // Loyal customers (1000+ points) get 2% off
+  discountRate(): number { return this.points >= 1_000 ? 0.02 : 0; }
+  describe() { return \`\${this.name}: giảm \${Math.round(this.discountRate() * 100)}%\`; }
 }
 
-class Manager extends Employee {
-  constructor(name: string, base: number, private teamSize: number) {
-    super(name, base);               // must call parent constructor first
+class VipCustomer extends Customer {
+  constructor(name: string, points: number, private tier: 1 | 2 | 3) {
+    super(name, points);               // must call parent constructor first
   }
 
   // "override" makes the intent explicit; compiler checks the parent has it
-  override salary(): number {
-    return super.salary() + this.teamSize * 2_000_000;   // reuse parent logic
+  override discountRate(): number {
+    return super.discountRate() + this.tier * 0.05;   // reuse parent logic
   }
 }
 
-const m = new Manager("Lan", 20_000_000, 5);
-m.describe();  // "Lan: 30000000 VND" — parent method calls the overridden salary()`}</Code>
+const vip = new VipCustomer("Lan", 1_200, 2);
+vip.describe();  // "Lan: giảm 12%" — parent method calls the overridden discountRate()`}</Code>
           <ul className="plain">
             <li>Một class chỉ <code>extends</code> được <b>một</b> class cha, nhưng <code>implements</code> được nhiều interface.</li>
             <li>Bật <code>noImplicitOverride</code> trong tsconfig để bắt buộc ghi <code>override</code>, tránh vô tình ghi đè.</li>
-            <li>Kế thừa thể hiện quan hệ <b>“là một”</b> (Manager là một Employee). Nếu chỉ là “có một” hay “dùng một” thì dùng composition.</li>
+            <li>Kế thừa thể hiện quan hệ <b>“là một”</b> (VipCustomer là một Customer). Nếu chỉ là “có một” hay “dùng một” thì dùng composition.</li>
           </ul>
           <div className="note"><b>Kế thừa sâu là nguồn rắc rối:</b> sửa lớp cha làm vỡ lớp con ở xa (fragile base class). Ưu tiên composition, phần lớn pattern GoF được sinh ra để tránh kế thừa cứng nhắc.</div>
         </section>
@@ -427,22 +430,21 @@ class Parcel implements Shippable, Taxable {
         <section id="oop-poly">
           <h2><span className="n">07</span>{"Đa hình & Generics"}</h2>
           <h3>Đa hình qua interface và override</h3>
-          <Code lang="ts">{`interface Shape { area(): number; name: string; }
+          <Code lang="ts">{`interface ShippingMethod { name: string; fee(weightKg: number): number; }
 
-class Circle implements Shape {
-  name = "Tròn";
-  constructor(private r: number) {}
-  area() { return Math.PI * this.r ** 2; }
+class Standard implements ShippingMethod {
+  name = "Tiêu chuẩn";
+  fee(kg: number) { return 20_000 + kg * 5_000; }
 }
-class Rect implements Shape {
-  name = "Chữ nhật";
-  constructor(private w: number, private h: number) {}
-  area() { return this.w * this.h; }
+class Express implements ShippingMethod {
+  name = "Hỏa tốc";
+  constructor(private surcharge: number) {}
+  fee(kg: number) { return 40_000 + kg * 8_000 + this.surcharge; }
 }
 
 // Same call, different behaviour per object
-const shapes: Shape[] = [new Circle(1), new Rect(2, 3)];
-shapes.forEach(s => console.log(s.name, s.area().toFixed(2)));`}</Code>
+const methods: ShippingMethod[] = [new Standard(), new Express(15_000)];
+methods.forEach(m => console.log(m.name, m.fee(2)));   // Tiêu chuẩn 30000, Hỏa tốc 71000`}</Code>
           <h3>Overloading trong TypeScript</h3>
           <Code lang="ts">{`class Formatter {
   // Overload signatures (what callers see)
@@ -472,7 +474,7 @@ products.find("p1")?.name;  // typed as string`}</Code>
           <p>Khi đọc sơ đồ của các design pattern, bạn sẽ gặp sáu loại quan hệ UML dưới đây. Xếp từ lỏng đến chặt.</p>
           <figure className="fig">
             <div className="scroll">
-              <svg viewBox="0 0 900 300" role="img" aria-label="Sáu ký hiệu quan hệ UML: dependency nét đứt mũi tên mở, association nét liền mũi tên mở, aggregation hình thoi rỗng, composition hình thoi đặc, inheritance tam giác rỗng nét liền, realization tam giác rỗng nét đứt"> <defs /> <text className="s-tb" x="20" y="42">Dependency <tspan className="s-tm">· dùng tạm</tspan></text> <rect className="s-box" x="20" y="56" width="120" height="40" rx="5" /><text className="s-tm" x="80" y="81" textAnchor="middle" style={{ fill: "var(--ink)" }}>Order</text> <rect className="s-box" x="310" y="56" width="120" height="40" rx="5" /><text className="s-tm" x="370" y="81" textAnchor="middle" style={{ fill: "var(--ink)" }}>Printer</text> <path d="M140 76 H310" style={{ stroke: "var(--ink)", strokeWidth: "1.3", fill: "none", strokeDasharray: "6 4" }} /> <polyline points="299,70 310,76 299,82" style={{ fill: "none", stroke: "var(--ink)", strokeWidth: "1.3" }} /> <text className="s-tb" x="470" y="42">Association <tspan className="s-tm">· biết đến</tspan></text> <rect className="s-box" x="470" y="56" width="120" height="40" rx="5" /><text className="s-tm" x="530" y="81" textAnchor="middle" style={{ fill: "var(--ink)" }}>Order</text> <rect className="s-box" x="760" y="56" width="120" height="40" rx="5" /><text className="s-tm" x="820" y="81" textAnchor="middle" style={{ fill: "var(--ink)" }}>Customer</text> <path d="M590 76 H760" style={{ stroke: "var(--ink)", strokeWidth: "1.3", fill: "none" }} /> <polyline points="749,70 760,76 749,82" style={{ fill: "none", stroke: "var(--ink)", strokeWidth: "1.3" }} /> <text className="s-tb" x="20" y="138">Aggregation <tspan className="s-tm">· có, sống độc lập</tspan></text> <rect className="s-box" x="20" y="152" width="120" height="40" rx="5" /><text className="s-tm" x="80" y="177" textAnchor="middle" style={{ fill: "var(--ink)" }}>Team</text> <rect className="s-box" x="310" y="152" width="120" height="40" rx="5" /><text className="s-tm" x="370" y="177" textAnchor="middle" style={{ fill: "var(--ink)" }}>Employee</text> <polygon points="140,172 152,165 164,172 152,179" style={{ fill: "var(--surface)", stroke: "var(--ink)", strokeWidth: "1.3" }} /> <path d="M164 172 H310" style={{ stroke: "var(--ink)", strokeWidth: "1.3", fill: "none" }} /> <text className="s-tb" x="470" y="138">Composition <tspan className="s-tm">· gồm, sống chết cùng</tspan></text> <rect className="s-box" x="470" y="152" width="120" height="40" rx="5" /><text className="s-tm" x="530" y="177" textAnchor="middle" style={{ fill: "var(--ink)" }}>Order</text> <rect className="s-box" x="760" y="152" width="120" height="40" rx="5" /><text className="s-tm" x="820" y="177" textAnchor="middle" style={{ fill: "var(--ink)" }}>OrderLine</text> <polygon points="590,172 602,165 614,172 602,179" style={{ fill: "var(--ink)", stroke: "var(--ink)", strokeWidth: "1.3" }} /> <path d="M614 172 H760" style={{ stroke: "var(--ink)", strokeWidth: "1.3", fill: "none" }} /> <text className="s-tb" x="20" y="234">Inheritance <tspan className="s-tm">· là một</tspan></text> <rect className="s-box" x="20" y="248" width="120" height="40" rx="5" /><text className="s-tm" x="80" y="273" textAnchor="middle" style={{ fill: "var(--ink)" }}>Manager</text> <rect className="s-box" x="310" y="248" width="120" height="40" rx="5" /><text className="s-tm" x="370" y="273" textAnchor="middle" style={{ fill: "var(--ink)" }}>Employee</text> <path d="M140 268 H310" style={{ stroke: "var(--ink)", strokeWidth: "1.3", fill: "none" }} /> <polygon points="310,268 296,260 296,276" style={{ fill: "var(--surface)", stroke: "var(--ink)", strokeWidth: "1.3" }} /> <text className="s-tb" x="470" y="234">Realization <tspan className="s-tm">· hiện thực interface</tspan></text> <rect className="s-box" x="470" y="248" width="120" height="40" rx="5" /><text className="s-tm" x="530" y="273" textAnchor="middle" style={{ fill: "var(--ink)" }}>Parcel</text> <rect className="s-box" x="760" y="248" width="120" height="40" rx="5" /><text className="s-tm" x="820" y="273" textAnchor="middle" style={{ fill: "var(--ink)" }}>Shippable</text> <path d="M590 268 H760" style={{ stroke: "var(--ink)", strokeWidth: "1.3", fill: "none", strokeDasharray: "6 4" }} /> <polygon points="760,268 746,260 746,276" style={{ fill: "var(--surface)", stroke: "var(--ink)", strokeWidth: "1.3" }} /> </svg>
+              <svg viewBox="0 0 900 300" role="img" aria-label="Sáu ký hiệu quan hệ UML: dependency nét đứt mũi tên mở, association nét liền mũi tên mở, aggregation hình thoi rỗng, composition hình thoi đặc, inheritance tam giác rỗng nét liền, realization tam giác rỗng nét đứt"> <defs /> <text className="s-tb" x="20" y="42">Dependency <tspan className="s-tm">· dùng tạm</tspan></text> <rect className="s-box" x="20" y="56" width="120" height="40" rx="5" /><text className="s-tm" x="80" y="81" textAnchor="middle" style={{ fill: "var(--ink)" }}>Order</text> <rect className="s-box" x="310" y="56" width="120" height="40" rx="5" /><text className="s-tm" x="370" y="81" textAnchor="middle" style={{ fill: "var(--ink)" }}>Printer</text> <path d="M140 76 H310" style={{ stroke: "var(--ink)", strokeWidth: "1.3", fill: "none", strokeDasharray: "6 4" }} /> <polyline points="299,70 310,76 299,82" style={{ fill: "none", stroke: "var(--ink)", strokeWidth: "1.3" }} /> <text className="s-tb" x="470" y="42">Association <tspan className="s-tm">· biết đến</tspan></text> <rect className="s-box" x="470" y="56" width="120" height="40" rx="5" /><text className="s-tm" x="530" y="81" textAnchor="middle" style={{ fill: "var(--ink)" }}>Order</text> <rect className="s-box" x="760" y="56" width="120" height="40" rx="5" /><text className="s-tm" x="820" y="81" textAnchor="middle" style={{ fill: "var(--ink)" }}>Customer</text> <path d="M590 76 H760" style={{ stroke: "var(--ink)", strokeWidth: "1.3", fill: "none" }} /> <polyline points="749,70 760,76 749,82" style={{ fill: "none", stroke: "var(--ink)", strokeWidth: "1.3" }} /> <text className="s-tb" x="20" y="138">Aggregation <tspan className="s-tm">· có, sống độc lập</tspan></text> <rect className="s-box" x="20" y="152" width="120" height="40" rx="5" /><text className="s-tm" x="80" y="177" textAnchor="middle" style={{ fill: "var(--ink)" }}>Category</text> <rect className="s-box" x="310" y="152" width="120" height="40" rx="5" /><text className="s-tm" x="370" y="177" textAnchor="middle" style={{ fill: "var(--ink)" }}>Product</text> <polygon points="140,172 152,165 164,172 152,179" style={{ fill: "var(--surface)", stroke: "var(--ink)", strokeWidth: "1.3" }} /> <path d="M164 172 H310" style={{ stroke: "var(--ink)", strokeWidth: "1.3", fill: "none" }} /> <text className="s-tb" x="470" y="138">Composition <tspan className="s-tm">· gồm, sống chết cùng</tspan></text> <rect className="s-box" x="470" y="152" width="120" height="40" rx="5" /><text className="s-tm" x="530" y="177" textAnchor="middle" style={{ fill: "var(--ink)" }}>Order</text> <rect className="s-box" x="760" y="152" width="120" height="40" rx="5" /><text className="s-tm" x="820" y="177" textAnchor="middle" style={{ fill: "var(--ink)" }}>OrderLine</text> <polygon points="590,172 602,165 614,172 602,179" style={{ fill: "var(--ink)", stroke: "var(--ink)", strokeWidth: "1.3" }} /> <path d="M614 172 H760" style={{ stroke: "var(--ink)", strokeWidth: "1.3", fill: "none" }} /> <text className="s-tb" x="20" y="234">Inheritance <tspan className="s-tm">· là một</tspan></text> <rect className="s-box" x="20" y="248" width="120" height="40" rx="5" /><text className="s-tm" x="80" y="273" textAnchor="middle" style={{ fill: "var(--ink)" }}>VipCustomer</text> <rect className="s-box" x="310" y="248" width="120" height="40" rx="5" /><text className="s-tm" x="370" y="273" textAnchor="middle" style={{ fill: "var(--ink)" }}>Customer</text> <path d="M140 268 H310" style={{ stroke: "var(--ink)", strokeWidth: "1.3", fill: "none" }} /> <polygon points="310,268 296,260 296,276" style={{ fill: "var(--surface)", stroke: "var(--ink)", strokeWidth: "1.3" }} /> <text className="s-tb" x="470" y="234">Realization <tspan className="s-tm">· hiện thực interface</tspan></text> <rect className="s-box" x="470" y="248" width="120" height="40" rx="5" /><text className="s-tm" x="530" y="273" textAnchor="middle" style={{ fill: "var(--ink)" }}>Parcel</text> <rect className="s-box" x="760" y="248" width="120" height="40" rx="5" /><text className="s-tm" x="820" y="273" textAnchor="middle" style={{ fill: "var(--ink)" }}>Shippable</text> <path d="M590 268 H760" style={{ stroke: "var(--ink)", strokeWidth: "1.3", fill: "none", strokeDasharray: "6 4" }} /> <polygon points="760,268 746,260 746,276" style={{ fill: "var(--surface)", stroke: "var(--ink)", strokeWidth: "1.3" }} /> </svg>
             </div>
             <figcaption>Hình thoi nằm ở phía “tổng thể”; tam giác chỉ về lớp cha hoặc interface. Nét đứt nghĩa là quan hệ yếu hơn hoặc chỉ là hợp đồng.</figcaption>
           </figure>
@@ -499,7 +501,7 @@ products.find("p1")?.name;  // typed as string`}</Code>
                 <tr>
                   <td><b>Aggregation</b></td>
                   <td>“Có”, phần sống độc lập</td>
-                  <td>Team giữ danh sách Employee; xóa Team, Employee vẫn còn</td>
+                  <td>Category giữ danh sách Product; xóa Category, Product vẫn còn</td>
                 </tr>
                 <tr>
                   <td><b>Composition</b></td>
@@ -509,7 +511,7 @@ products.find("p1")?.name;  // typed as string`}</Code>
                 <tr>
                   <td><b>Inheritance</b></td>
                   <td>“Là một”</td>
-                  <td><code>class Manager extends Employee</code></td>
+                  <td><code>class VipCustomer extends Customer</code></td>
                 </tr>
                 <tr>
                   <td><b>Realization</b></td>
@@ -531,21 +533,21 @@ class Order {
         <section id="oop-ts">
           <h2><span className="n">09</span>Điểm riêng của TypeScript</h2>
           <ul className="plain">
-            <li><b>Structural typing</b>: TypeScript so sánh theo <b>hình dạng</b>, không theo tên. Object nào có đủ <code>area()</code> và <code>name</code> đều là <code>Shape</code>, không cần ghi <code>implements</code>. Ghi <code>implements</code> vẫn nên làm để compiler kiểm tra sớm.</li>
+            <li><b>Structural typing</b>: TypeScript so sánh theo <b>hình dạng</b>, không theo tên. Object nào có đủ <code>name</code> và <code>fee()</code> đều là <code>ShippingMethod</code>, không cần ghi <code>implements</code>. Ghi <code>implements</code> vẫn nên làm để compiler kiểm tra sớm.</li>
             <li><b>Class vừa là giá trị vừa là kiểu</b>: <code>Product</code> dùng được với <code>new</code> và cũng dùng làm kiểu <code>let p: Product</code>.</li>
-            <li><b>Interface không tồn tại lúc chạy</b>: không dùng được <code>x instanceof Shape</code>; muốn kiểm tra thì viết type guard <code>{"(x): x is Shape => \"area\" in x"}</code>.</li>
+            <li><b>Interface không tồn tại lúc chạy</b>: không dùng được <code>x instanceof ShippingMethod</code>; muốn kiểm tra thì viết type guard <code>{"(x): x is ShippingMethod => \"fee\" in x"}</code>.</li>
             <li><b>Mất <code>this</code></b>: truyền <code>obj.method</code> làm callback thì <code>this</code> bị mất. Dùng arrow function làm field (<code>{"handle = () => …"}</code>) hoặc <code>.bind(this)</code>.</li>
             <li><b>Dưới lớp vỏ là prototype</b>: method nằm trên <code>Product.prototype</code>, mọi object dùng chung; field nằm trên từng object.</li>
             <li>Không phải mọi thứ đều cần class. Hàm thuần và object literal thường gọn hơn cho logic không có trạng thái.</li>
           </ul>
-          <Code lang="ts">{`class Button {
-  clicks = 0;
-  onClickBroken() { this.clicks++; }       // "this" is lost when passed as a callback
-  onClick = () => { this.clicks++; };      // arrow field keeps "this"
+          <Code lang="ts">{`class AddToCartButton {
+  added = 0;
+  onClickBroken() { this.added++; }        // "this" is lost when passed as a callback
+  onClick = () => { this.added++; };       // arrow field keeps "this"
 }
-const btn = new Button();
+const btn = new AddToCartButton();
 setTimeout(btn.onClick, 0);                // works
-// setTimeout(btn.onClickBroken, 0);       // TypeError: cannot read 'clicks' of undefined`}</Code>
+// setTimeout(btn.onClickBroken, 0);       // TypeError: cannot read 'added' of undefined`}</Code>
         </section>
         <section id="oop-cheat">
           <h2><span className="n">10</span>Bảng từ khóa</h2>

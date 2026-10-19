@@ -1,4 +1,4 @@
-# Sổ tay Backend
+# Sổ tay lập trình
 
 Ghi chú học backend bằng tiếng Việt, viết bằng **Next.js (App Router) + TypeScript**, xuất ra site tĩnh.
 
@@ -29,17 +29,19 @@ npm start            # xem thử bản build
 ```
 app/
   layout.tsx                 # khung trang, header, font
-  page.tsx                   # trang Tổng quan  (/)
+  page.tsx                   # trang chủ: thẻ 5 mảng FE, BE, Database, CI/CD, Git  (/)
+  [group]/page.tsx           # trang một mảng   (/be/, /git/, ...)
   [group]/[slug]/page.tsx    # mọi trang con     (/api/rest/, /messaging/kafka/, ...)
   notebook.css               # giao diện chung, sơ đồ
   globals.css                # phần riêng cho Next.js
 components/
   NotebookHeader.tsx         # thanh nhóm + tab con (client component)
+  AreaCards.tsx              # thẻ mảng và thẻ nhóm
   Code.tsx                   # khối code, tô màu lúc build bằng Shiki (One Dark)
 lib/
-  notebook.ts                # danh sách nhóm, trang, route
+  notebook.ts                # mảng (AREAS), nhóm (GROUPS), trang, route
 content/
-  home.tsx                   # nội dung trang Tổng quan
+  be.tsx                     # trang tổng quan riêng của mảng BE
   <nhóm>/<slug>.tsx          # nội dung từng trang: chữ, sơ đồ SVG, code
   index.ts                   # map "nhóm/slug" → component
 ```
@@ -47,7 +49,7 @@ content/
 ### Thêm hoặc sửa một trang
 
 1. Sửa hoặc tạo file `content/<nhóm>/<slug>.tsx`.
-2. Nếu là trang mới, khai báo trong `lib/notebook.ts` và `content/index.ts`.
+2. Nếu là trang mới, khai báo trong `lib/notebook.ts` (nhóm thuộc mảng nào qua `area`) và `content/index.ts`.
 3. Link sang trang khác dùng `<Link href="/design/oop/#oop-static">` (base path được thêm tự động).
 4. Code mẫu viết trong `<Code lang="ts">{`...`}</Code>`.
 

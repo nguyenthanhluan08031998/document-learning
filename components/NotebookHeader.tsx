@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { GROUPS, pageHref, type GroupId } from "@/lib/notebook";
+import { AREAS, GROUPS, areaHref, findArea, groupsOf, pageHref, type GroupId } from "@/lib/notebook";
 
 const STORAGE_KEY = "notebook-last-page";
 
@@ -14,35 +14,49 @@ function readLast(): Partial<Record<GroupId, string>> {
 
 export function NotebookHeader() {
   const pathname = usePathname();
-  const [, groupSeg, slugSeg] = pathname.split("/");
-  const active = GROUPS.find(g => g.id === groupSeg);
+  const [, firstSeg, slugSeg] = pathname.split("/");
+  // First segment is either a group (/api/rest/) or an area (/be/)
+  const activeGroup = GROUPS.find(g => g.id === firstSeg);
+  const activeArea = activeGroup ? findArea(activeGroup.area) : findArea(firstSeg);
   const [last, setLast] = useState<Partial<Record<GroupId, string>>>({});
 
   useEffect(() => {
     const stored = readLast();
-    if (active && slugSeg) {
-      stored[active.id] = slugSeg;
+    if (activeGroup && slugSeg) {
+      stored[activeGroup.id] = slugSeg;
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify(stored)); } catch { /* storage unavailable */ }
     }
     setLast(stored);
-  }, [active, slugSeg]);
+  }, [activeGroup, slugSeg]);
+
+  const areaGroups = activeArea ? groupsOf(activeArea.id) : [];
 
   return (
     <header className="appbar">
       <div className="appbar-in">
         <div className="bar1">
           <Link href="/" className="brand" style={{ color: "inherit", textDecoration: "none" }}>
-            Sổ tay Backend <small>API · Messaging · Thiết kế · Đồng thời · Vận hành</small>
+            Sổ tay lập trình <small>FE · BE · Database · CI/CD · Git</small>
           </Link>
-          <nav className="groups-nav" aria-label="Nhóm">
-            <Link href="/" aria-current={!active ? "page" : undefined} data-pressed={!active}>
+          <nav className="groups-nav" aria-label="Mảng">
+            <Link href="/" aria-current={!activeArea ? "page" : undefined} data-pressed={!activeArea}>
               Tổng quan
             </Link>
-            {GROUPS.map(g => (
+            {AREAS.map(a => (
+              <Link key={a.id} href={areaHref(a.id)} data-pressed={activeArea?.id === a.id}>
+                {a.label}
+              </Link>
+            ))}
+          </nav>
+        </div>
+        <div className="spacer" />
+        {areaGroups.length > 0 && (
+          <nav className="areanav" aria-label={`Nhóm trong ${activeArea!.label}`}>
+            {areaGroups.map(g => (
               <Link
                 key={g.id}
                 href={pageHref(g.id, last[g.id] ?? g.pages[0].slug)}
-                data-pressed={active?.id === g.id}
+                aria-current={activeGroup?.id === g.id ? "true" : undefined}
               >
                 <i className={`dot ${g.tone}`} />
                 {g.label}
@@ -50,14 +64,13 @@ export function NotebookHeader() {
               </Link>
             ))}
           </nav>
-        </div>
-        <div className="spacer" />
-        {active && (
-          <nav className="subnav" data-group={active.tone} aria-label={`Sổ tay ${active.label}`}>
-            {active.pages.map(p => (
+        )}
+        {activeGroup && (
+          <nav className="subnav" data-group={activeGroup.tone} aria-label={`Sổ tay ${activeGroup.label}`}>
+            {activeGroup.pages.map(p => (
               <Link
                 key={p.slug}
-                href={pageHref(active.id, p.slug)}
+                href={pageHref(activeGroup.id, p.slug)}
                 className={p.aside ? "cmpbtn" : undefined}
                 aria-current={p.slug === slugSeg ? "page" : undefined}
               >

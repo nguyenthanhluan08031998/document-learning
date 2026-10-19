@@ -1,6 +1,23 @@
-// Single source of truth for groups, pages and their routes
+// Single source of truth for areas, groups, pages and their routes
 
-export type GroupId = "api" | "messaging" | "design" | "concurrency" | "operations" | "deploy";
+export type AreaId = "fe" | "be" | "database" | "cicd" | "git";
+
+export interface Area {
+  id: AreaId;
+  label: string;
+  hint: string;
+}
+
+// Top-level sections; an area without groups is shown as "no content yet"
+export const AREAS: Area[] = [
+  { id: "fe", label: "FE", hint: "Frontend" },
+  { id: "be", label: "BE", hint: "Backend" },
+  { id: "database", label: "Database", hint: "Cơ sở dữ liệu" },
+  { id: "cicd", label: "CI/CD", hint: "Build, deploy" },
+  { id: "git", label: "Git", hint: "Quản lý mã nguồn" },
+];
+
+export type GroupId = "api" | "messaging" | "design" | "concurrency" | "operations" | "deploy" | "git" | "db";
 
 export interface NotebookPage {
   slug: string;
@@ -11,16 +28,17 @@ export interface NotebookPage {
 
 export interface NotebookGroup {
   id: GroupId;
+  area: AreaId;
   label: string;
   hint: string;
   /** CSS class suffix used for the coloured dot and active tab */
-  tone: "api" | "msg" | "design" | "conc" | "ops" | "deploy";
+  tone: "api" | "msg" | "design" | "conc" | "ops" | "deploy" | "git" | "db";
   pages: NotebookPage[];
 }
 
 export const GROUPS: NotebookGroup[] = [
   {
-    id: "api", label: "API", hint: "đồng bộ", tone: "api",
+    id: "api", area: "be", label: "API", hint: "đồng bộ", tone: "api",
     pages: [
       { slug: "rest", label: "REST" },
       { slug: "graphql", label: "GraphQL" },
@@ -29,7 +47,7 @@ export const GROUPS: NotebookGroup[] = [
     ],
   },
   {
-    id: "messaging", label: "Messaging", hint: "bất đồng bộ", tone: "msg",
+    id: "messaging", area: "be", label: "Messaging", hint: "bất đồng bộ", tone: "msg",
     pages: [
       { slug: "kafka", label: "Kafka" },
       { slug: "rabbitmq", label: "RabbitMQ" },
@@ -38,7 +56,7 @@ export const GROUPS: NotebookGroup[] = [
     ],
   },
   {
-    id: "design", label: "Thiết kế", hint: "pattern", tone: "design",
+    id: "design", area: "be", label: "Thiết kế", hint: "pattern", tone: "design",
     pages: [
       { slug: "oop", label: "OOP" },
       { slug: "principles", label: "Nguyên tắc" },
@@ -51,7 +69,7 @@ export const GROUPS: NotebookGroup[] = [
     ],
   },
   {
-    id: "concurrency", label: "Đồng thời", hint: "lock", tone: "conc",
+    id: "concurrency", area: "be", label: "Đồng thời", hint: "lock", tone: "conc",
     pages: [
       { slug: "overview", label: "Tổng quan" },
       { slug: "db-lock", label: "Lock trong DB" },
@@ -60,7 +78,7 @@ export const GROUPS: NotebookGroup[] = [
     ],
   },
   {
-    id: "operations", label: "Vận hành", hint: "logging", tone: "ops",
+    id: "operations", area: "be", label: "Vận hành", hint: "logging", tone: "ops",
     pages: [
       { slug: "logging", label: "Logging cơ bản" },
       { slug: "structured-logging", label: "Structured & context" },
@@ -69,13 +87,34 @@ export const GROUPS: NotebookGroup[] = [
     ],
   },
   {
-    id: "deploy", label: "Triển khai", hint: "docker, ci/cd", tone: "deploy",
+    id: "deploy", area: "cicd", label: "Triển khai", hint: "docker, ci/cd", tone: "deploy",
     pages: [
       { slug: "docker", label: "Docker" },
       { slug: "cicd-ec2", label: "CI/CD lên EC2" },
     ],
   },
+  {
+    id: "git", area: "git", label: "Git", hint: "branch, merge", tone: "git",
+    pages: [
+      { slug: "workflow", label: "Branching workflow" },
+      { slug: "merge-rebase", label: "Merge vs Rebase" },
+    ],
+  },
+  {
+    id: "db", area: "database", label: "Database", hint: "SQL, NoSQL", tone: "db",
+    pages: [
+      { slug: "postgresql", label: "PostgreSQL" },
+      { slug: "mysql", label: "MySQL" },
+      { slug: "mongodb", label: "MongoDB" },
+      { slug: "dynamodb", label: "DynamoDB" },
+      { slug: "compare", label: "So sánh", aside: true },
+    ],
+  },
 ];
+
+export const areaHref = (area: AreaId) => `/${area}/`;
+export const groupsOf = (area: AreaId) => GROUPS.filter(g => g.area === area);
+export const findArea = (id: string) => AREAS.find(a => a.id === id);
 
 export const pageHref = (group: GroupId, slug: string) => `/${group}/${slug}/`;
 

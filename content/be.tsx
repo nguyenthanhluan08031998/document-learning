@@ -1,11 +1,11 @@
 import Link from "next/link";
 
-export default function HomePage() {
+export default function BackendOverviewPage() {
   return (
     <div className="wrap single">
       <main>
         <header className="hero">
-          <div className="eyebrow">sổ tay backend · tổng quan</div>
+          <div className="eyebrow">backend · tổng quan</div>
           <h1>Các service nói chuyện với nhau thế nào</h1>
           <p className="lede">Có hai cách chính. <b>API đồng bộ</b>: gửi yêu cầu và chờ trả lời ngay. <b>Messaging bất đồng bộ</b>: gửi sự kiện vào một hệ thống trung gian rồi làm việc khác, bên nhận xử lý khi sẵn sàng. Sổ tay có hai nhóm cho hai cách này, cộng thêm nhóm <b>Thiết kế</b> về cách tổ chức code bên trong mỗi service, nhóm <b>Đồng thời</b> về xử lý khi nhiều bên cùng sửa một dữ liệu, và nhóm <b>Vận hành</b> về log và quan sát hệ thống.</p>
         </header>
@@ -42,7 +42,7 @@ export default function HomePage() {
             <div className="group g-ops">
               <div className="g-head"><span className="g-tag">Chạy production</span><h2>Vận hành</h2></div>
               <p>Biết hệ thống đang làm gì: log, request ID, trace và metric.</p>
-              <div className="g-list"> <Link className="g-item" href="/operations/logging/"><b>Logging cơ bản</b><span>Level, nên và không nên log gì, log lỗi</span></Link> <Link className="g-item" href="/operations/structured-logging/"><b>{"Structured & context"}</b><span>JSON, pino, child logger, request ID</span></Link> <Link className="g-item" href="/operations/build-logger/"><b>Tự viết logger</b><span>TypeScript, Strategy, redact, AsyncLocalStorage</span></Link> <Link className="g-item" href="/operations/observability/"><b>Observability</b><span>Logs, metrics, traces, OpenTelemetry</span></Link> </div>
+              <div className="g-list"> <Link className="g-item" href="/operations/logging/"><b>Logging cơ bản</b><span>Level, nên và không nên log gì, log lỗi</span></Link> <Link className="g-item" href="/operations/structured-logging/"><b>{"Structured & context"}</b><span>JSON, pino, child logger, request ID</span></Link> <Link className="g-item" href="/operations/build-logger/"><b>Tự viết logger</b><span>Log trong một service, traceId, spanId, correlationId</span></Link> <Link className="g-item" href="/operations/observability/"><b>Observability</b><span>Logs, metrics, traces, OpenTelemetry</span></Link> </div>
             </div>
           </div>
         </section>
