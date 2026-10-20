@@ -1,11 +1,19 @@
 import Link from "next/link";
 import { PAGES } from "@/content";
-import { AREAS, areaHref, groupsOf, pageHref, type AreaId } from "@/lib/notebook";
+import {
+  AREAS, areaHint, areaHref, groupHint, groupLabel, groupsOf, pageHref, pageLabel, type AreaId, type Locale,
+} from "@/lib/notebook";
 
-const Empty = () => <p className="empty">Chưa có nội dung.</p>;
+const UI = {
+  vi: { empty: "Chưa có nội dung.", overview: "Tổng quan", intro: "Trang giới thiệu của mảng" },
+  en: { empty: "No content yet.", overview: "Overview of", intro: "Introduction to" },
+};
+
+const Empty = ({ locale }: { locale: Locale }) => <p className="empty">{UI[locale].empty}</p>;
 
 /** Home page: one card per area with links to its groups */
-export function AreaCards() {
+export function AreaCards({ locale = "vi" }: { locale?: Locale }) {
+  const t = UI[locale];
   return (
     <div className="groups">
       {AREAS.map(a => {
@@ -13,25 +21,25 @@ export function AreaCards() {
         return (
           <div key={a.id} className="group">
             <div className="g-head">
-              <span className="g-tag">{a.hint}</span>
-              <h2><Link href={areaHref(a.id)} className="g-title">{a.label}</Link></h2>
+              <span className="g-tag">{areaHint(a, locale)}</span>
+              <h2><Link href={areaHref(a.id, locale)} className="g-title">{a.label}</Link></h2>
             </div>
             {groups.length || PAGES[a.id] ? (
               <div className="g-list">
                 {PAGES[a.id] && (
-                  <Link className="g-item" href={areaHref(a.id)}>
-                    <b>Tổng quan {a.label}</b>
-                    <span>Trang giới thiệu của mảng {a.hint}</span>
+                  <Link className="g-item" href={areaHref(a.id, locale)}>
+                    <b>{t.overview} {a.label}</b>
+                    <span>{t.intro} {areaHint(a, locale)}</span>
                   </Link>
                 )}
                 {groups.map(g => (
-                  <Link key={g.id} className="g-item" href={pageHref(g.id, g.pages[0].slug)}>
-                    <b><i className={`dot ${g.tone}`} /> {g.label}</b>
-                    <span>{g.pages.map(p => p.label).join(" · ")}</span>
+                  <Link key={g.id} className="g-item" href={pageHref(g.id, g.pages[0].slug, locale)}>
+                    <b><i className={`dot ${g.tone}`} /> {groupLabel(g, locale)}</b>
+                    <span>{g.pages.map(p => pageLabel(p, locale)).join(" · ")}</span>
                   </Link>
                 ))}
               </div>
-            ) : <Empty />}
+            ) : <Empty locale={locale} />}
           </div>
         );
       })}
@@ -40,18 +48,18 @@ export function AreaCards() {
 }
 
 /** Area page without a hand-written overview: one card per group with links to its pages */
-export function GroupCards({ area }: { area: AreaId }) {
+export function GroupCards({ area, locale = "vi" }: { area: AreaId; locale?: Locale }) {
   const groups = groupsOf(area);
-  if (!groups.length) return <Empty />;
+  if (!groups.length) return <Empty locale={locale} />;
   return (
     <div className="groups">
       {groups.map(g => (
         <div key={g.id} className={`group g-${g.tone}`}>
-          <div className="g-head"><span className="g-tag">{g.hint}</span><h2>{g.label}</h2></div>
+          <div className="g-head"><span className="g-tag">{groupHint(g, locale)}</span><h2>{groupLabel(g, locale)}</h2></div>
           <div className="g-list">
             {g.pages.map(p => (
-              <Link key={p.slug} className={p.aside ? "g-item g-cmp" : "g-item"} href={pageHref(g.id, p.slug)}>
-                <b>{p.label}</b>
+              <Link key={p.slug} className={p.aside ? "g-item g-cmp" : "g-item"} href={pageHref(g.id, p.slug, locale)}>
+                <b>{pageLabel(p, locale)}</b>
               </Link>
             ))}
           </div>

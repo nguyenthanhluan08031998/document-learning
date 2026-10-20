@@ -1,4 +1,6 @@
-// Single source of truth for areas, groups, pages and their routes
+// Single source of truth for areas, groups, pages and their routes (Vietnamese at the root, English under /en)
+
+export type Locale = "vi" | "en";
 
 export type AreaId = "fe" | "be" | "database" | "cicd" | "git";
 
@@ -6,15 +8,16 @@ export interface Area {
   id: AreaId;
   label: string;
   hint: string;
+  hintEn: string;
 }
 
 // Top-level sections; an area without groups is shown as "no content yet"
 export const AREAS: Area[] = [
-  { id: "fe", label: "FE", hint: "Frontend" },
-  { id: "be", label: "BE", hint: "Backend" },
-  { id: "database", label: "Database", hint: "Cơ sở dữ liệu" },
-  { id: "cicd", label: "CI/CD", hint: "Build, deploy" },
-  { id: "git", label: "Git", hint: "Quản lý mã nguồn" },
+  { id: "fe", label: "FE", hint: "Frontend", hintEn: "Frontend" },
+  { id: "be", label: "BE", hint: "Backend", hintEn: "Backend" },
+  { id: "database", label: "Database", hint: "Cơ sở dữ liệu", hintEn: "Databases" },
+  { id: "cicd", label: "CI/CD", hint: "Build, deploy", hintEn: "Build, deploy" },
+  { id: "git", label: "Git", hint: "Quản lý mã nguồn", hintEn: "Source control" },
 ];
 
 export type GroupId = "api" | "messaging" | "design" | "concurrency" | "operations" | "deploy" | "git" | "db";
@@ -22,6 +25,7 @@ export type GroupId = "api" | "messaging" | "design" | "concurrency" | "operatio
 export interface NotebookPage {
   slug: string;
   label: string;
+  labelEn?: string;
   /** Comparison and cheat-sheet tabs are pushed to the right of the tab bar */
   aside?: boolean;
 }
@@ -31,6 +35,8 @@ export interface NotebookGroup {
   area: AreaId;
   label: string;
   hint: string;
+  labelEn: string;
+  hintEn: string;
   /** CSS class suffix used for the coloured dot and active tab */
   tone: "api" | "msg" | "design" | "conc" | "ops" | "deploy" | "git" | "db";
   pages: NotebookPage[];
@@ -38,85 +44,101 @@ export interface NotebookGroup {
 
 export const GROUPS: NotebookGroup[] = [
   {
-    id: "api", area: "be", label: "API", hint: "đồng bộ", tone: "api",
+    id: "api", area: "be", label: "API", hint: "đồng bộ", labelEn: "API", hintEn: "synchronous", tone: "api",
     pages: [
       { slug: "rest", label: "REST" },
       { slug: "graphql", label: "GraphQL" },
       { slug: "grpc", label: "gRPC" },
-      { slug: "compare", label: "So sánh", aside: true },
+      { slug: "compare", label: "So sánh", labelEn: "Compare", aside: true },
     ],
   },
   {
-    id: "messaging", area: "be", label: "Messaging", hint: "bất đồng bộ", tone: "msg",
+    id: "messaging", area: "be", label: "Messaging", hint: "bất đồng bộ", labelEn: "Messaging", hintEn: "asynchronous", tone: "msg",
     pages: [
       { slug: "kafka", label: "Kafka" },
       { slug: "rabbitmq", label: "RabbitMQ" },
       { slug: "nats", label: "NATS" },
-      { slug: "compare", label: "So sánh", aside: true },
+      { slug: "compare", label: "So sánh", labelEn: "Compare", aside: true },
     ],
   },
   {
-    id: "design", area: "be", label: "Thiết kế", hint: "pattern", tone: "design",
+    id: "design", area: "be", label: "Thiết kế", hint: "pattern", labelEn: "Design", hintEn: "patterns", tone: "design",
     pages: [
       { slug: "oop", label: "OOP" },
-      { slug: "principles", label: "Nguyên tắc" },
+      { slug: "principles", label: "Nguyên tắc", labelEn: "Principles" },
       { slug: "creational", label: "Creational" },
       { slug: "structural", label: "Structural" },
       { slug: "behavioral", label: "Behavioral" },
       { slug: "microservice", label: "Microservice" },
       { slug: "clean-architecture", label: "Clean Architecture" },
-      { slug: "cheat-sheet", label: "Tra nhanh", aside: true },
+      { slug: "cheat-sheet", label: "Tra nhanh", labelEn: "Cheat sheet", aside: true },
     ],
   },
   {
-    id: "concurrency", area: "be", label: "Đồng thời", hint: "lock", tone: "conc",
+    id: "concurrency", area: "be", label: "Đồng thời", hint: "lock", labelEn: "Concurrency", hintEn: "locks", tone: "conc",
     pages: [
-      { slug: "overview", label: "Tổng quan" },
-      { slug: "db-lock", label: "Lock trong DB" },
+      { slug: "overview", label: "Tổng quan", labelEn: "Overview" },
+      { slug: "db-lock", label: "Lock trong DB", labelEn: "Locks in the DB" },
       { slug: "distributed-lock", label: "Distributed lock" },
-      { slug: "compare", label: "So sánh", aside: true },
+      { slug: "compare", label: "So sánh", labelEn: "Compare", aside: true },
     ],
   },
   {
-    id: "operations", area: "be", label: "Vận hành", hint: "logging", tone: "ops",
+    id: "operations", area: "be", label: "Vận hành", hint: "logging", labelEn: "Operations", hintEn: "logging", tone: "ops",
     pages: [
-      { slug: "logging", label: "Logging cơ bản" },
+      { slug: "logging", label: "Logging cơ bản", labelEn: "Logging basics" },
       { slug: "structured-logging", label: "Structured & context" },
-      { slug: "build-logger", label: "Tự viết logger" },
+      { slug: "build-logger", label: "Tự viết logger", labelEn: "Build a logger" },
       { slug: "observability", label: "Observability" },
     ],
   },
   {
-    id: "deploy", area: "cicd", label: "Triển khai", hint: "docker, ci/cd", tone: "deploy",
+    id: "deploy", area: "cicd", label: "Triển khai", hint: "docker, ci/cd", labelEn: "Deployment", hintEn: "docker, ci/cd", tone: "deploy",
     pages: [
       { slug: "docker", label: "Docker" },
-      { slug: "cicd-ec2", label: "CI/CD lên EC2" },
+      { slug: "cicd-ec2", label: "CI/CD lên EC2", labelEn: "CI/CD to EC2" },
     ],
   },
   {
-    id: "git", area: "git", label: "Git", hint: "branch, merge", tone: "git",
+    id: "git", area: "git", label: "Git", hint: "branch, merge", labelEn: "Git", hintEn: "branch, merge", tone: "git",
     pages: [
       { slug: "workflow", label: "Branching workflow" },
       { slug: "merge-rebase", label: "Merge vs Rebase" },
     ],
   },
   {
-    id: "db", area: "database", label: "Database", hint: "SQL, NoSQL", tone: "db",
+    id: "db", area: "database", label: "Database", hint: "SQL, NoSQL", labelEn: "Database", hintEn: "SQL, NoSQL", tone: "db",
     pages: [
       { slug: "postgresql", label: "PostgreSQL" },
       { slug: "mysql", label: "MySQL" },
       { slug: "mongodb", label: "MongoDB" },
       { slug: "dynamodb", label: "DynamoDB" },
-      { slug: "compare", label: "So sánh", aside: true },
+      { slug: "compare", label: "So sánh", labelEn: "Compare", aside: true },
     ],
   },
 ];
 
-export const areaHref = (area: AreaId) => `/${area}/`;
+const prefix = (locale: Locale) => (locale === "en" ? "/en" : "");
+
+export const areaHref = (area: AreaId, locale: Locale = "vi") => `${prefix(locale)}/${area}/`;
 export const groupsOf = (area: AreaId) => GROUPS.filter(g => g.area === area);
 export const findArea = (id: string) => AREAS.find(a => a.id === id);
 
-export const pageHref = (group: GroupId, slug: string) => `/${group}/${slug}/`;
+export const pageHref = (group: GroupId, slug: string, locale: Locale = "vi") => `${prefix(locale)}/${group}/${slug}/`;
+export const homeHref = (locale: Locale = "vi") => `${prefix(locale)}/`;
+
+// Localized labels
+export const areaHint = (a: Area, locale: Locale) => (locale === "en" ? a.hintEn : a.hint);
+export const groupLabel = (g: NotebookGroup, locale: Locale) => (locale === "en" ? g.labelEn : g.label);
+export const groupHint = (g: NotebookGroup, locale: Locale) => (locale === "en" ? g.hintEn : g.hint);
+export const pageLabel = (p: NotebookPage, locale: Locale) => (locale === "en" ? p.labelEn ?? p.label : p.label);
+
+// Locale from a pathname, and the same page in the other language
+export const localeOf = (pathname: string): Locale => (pathname === "/en" || pathname.startsWith("/en/") ? "en" : "vi");
+export function switchLocale(pathname: string, to: Locale): string {
+  const bare = localeOf(pathname) === "en" ? pathname.slice(3) || "/" : pathname;
+  return to === "en" ? `/en${bare === "/" ? "/" : bare}` : bare;
+}
 
 export function findPage(group: string, slug: string) {
   const g = GROUPS.find(x => x.id === group);
