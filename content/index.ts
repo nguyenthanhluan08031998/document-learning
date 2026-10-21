@@ -10,6 +10,14 @@ import fe from "./fe";
 import git from "./git";
 import gitMergeRebase from "./git/merge-rebase";
 import gitWorkflow from "./git/workflow";
+import aiRag from "./ai/rag";
+import golangConcurrency from "./golang/concurrency";
+import golangDataStructures from "./golang/data-structures";
+import golangInterview from "./golang/interview";
+import golangMemory from "./golang/memory";
+import golangProduction from "./golang/production";
+import golangRuntime from "./golang/runtime";
+import golangVersions from "./golang/versions";
 import apiCompare from "./api/compare";
 import apiGraphql from "./api/graphql";
 import apiGrpc from "./api/grpc";
@@ -38,6 +46,14 @@ import operationsStructuredLogging from "./operations/structured-logging";
 
 // Page body components keyed by "group/slug", plus "<area>" for an area overview
 export const PAGES: Record<string, ComponentType> = {
+  "ai/rag": aiRag,
+  "golang/concurrency": golangConcurrency,
+  "golang/data-structures": golangDataStructures,
+  "golang/interview": golangInterview,
+  "golang/memory": golangMemory,
+  "golang/production": golangProduction,
+  "golang/runtime": golangRuntime,
+  "golang/versions": golangVersions,
   "api/compare": apiCompare,
   "api/graphql": apiGraphql,
   "api/grpc": apiGrpc,

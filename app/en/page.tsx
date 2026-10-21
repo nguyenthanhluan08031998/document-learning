@@ -12,7 +12,7 @@ export default function HomePage() {
         <header className="hero">
           <div className="eyebrow">programming notebook · overview</div>
           <h1>Programming notebook</h1>
-          <p className="lede">Study notes in five areas: Frontend, Backend, Database, CI/CD and Git. Every example revolves around one online <b>selling and payments</b> system, shown below.</p>
+          <p className="lede">Study notes in six areas: Frontend, Backend, Database, CI/CD, Git and AI. Every example revolves around one online <b>selling and payments</b> system, shown below.</p>
         </header>
         <section>
           <h2>The example system: an e-commerce marketplace</h2>

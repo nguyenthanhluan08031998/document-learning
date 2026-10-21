@@ -9,6 +9,8 @@ Ghi chú học backend bằng tiếng Việt, viết bằng **Next.js (App Route
 | Thiết kế | OOP, SOLID, 23 pattern GoF, pattern microservice, Clean Architecture, tra nhanh |
 | Đồng thời | Race condition, isolation level, pessimistic/optimistic lock, SKIP LOCKED, distributed lock |
 | Vận hành | Logging, structured logging, tự viết logger, observability |
+| Go | Phiên bản, runtime GMP, channel & context, bộ nhớ & GC, slice/map/interface, production, phỏng vấn |
+| AI | RAG vs Agentic RAG |
 
 ## Chạy trên máy
 
@@ -29,7 +31,7 @@ npm start            # xem thử bản build
 ```
 app/
   layout.tsx                 # khung trang, header, font
-  page.tsx                   # trang chủ: thẻ 5 mảng FE, BE, Database, CI/CD, Git  (/)
+  page.tsx                   # trang chủ: thẻ 6 mảng FE, BE, Database, CI/CD, Git, AI  (/)
   [group]/page.tsx           # trang một mảng   (/be/, /git/, ...)
   en/                        # cùng các route cho tiếng Anh dưới /en/
   [group]/[slug]/page.tsx    # mọi trang con     (/api/rest/, /messaging/kafka/, ...)

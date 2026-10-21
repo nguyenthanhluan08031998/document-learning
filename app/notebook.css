@@ -202,6 +202,14 @@ pre.code code{background:none;padding:0;font-size:inherit}
 .dot.conc{background:var(--bad)}
 .dot.ops{background:var(--ok)}
 .dot.deploy{background:var(--deploy)}
+.dot.ai{background:var(--new)}
+.dot.go{background:var(--deploy)}
+.subnav[data-group="go"]{--grp:var(--deploy)}
+.g-go .g-tag{background:var(--deploy-soft);color:var(--deploy)}
+.g-go .g-item:hover{border-color:var(--deploy)}
+.subnav[data-group="ai"]{--grp:var(--new)}
+.g-ai .g-tag{background:var(--new-soft);color:var(--new)}
+.g-ai .g-item:hover{border-color:var(--new)}
 .groups > .group:last-child:nth-child(odd){grid-column:1/-1}
 .subnav[data-group="ops"]{--grp:var(--ok)}
 .subnav[data-group="deploy"]{--grp:var(--deploy)}

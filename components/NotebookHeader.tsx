@@ -47,7 +47,7 @@ export function NotebookHeader() {
       <div className="appbar-in">
         <div className="bar1">
           <Link href={homeHref(locale)} className="brand" style={{ color: "inherit", textDecoration: "none" }}>
-            {t.brand} <small>FE · BE · Database · CI/CD · Git</small>
+            {t.brand} <small>FE · BE · Database · CI/CD · Git · AI</small>
           </Link>
           <div className="bar1-right">
             <nav className="groups-nav" aria-label={t.areas}>

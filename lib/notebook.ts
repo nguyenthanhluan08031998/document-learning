@@ -2,7 +2,7 @@
 
 export type Locale = "vi" | "en";
 
-export type AreaId = "fe" | "be" | "database" | "cicd" | "git";
+export type AreaId = "fe" | "be" | "database" | "cicd" | "git" | "ai";
 
 export interface Area {
   id: AreaId;
@@ -18,9 +18,10 @@ export const AREAS: Area[] = [
   { id: "database", label: "Database", hint: "Cơ sở dữ liệu", hintEn: "Databases" },
   { id: "cicd", label: "CI/CD", hint: "Build, deploy", hintEn: "Build, deploy" },
   { id: "git", label: "Git", hint: "Quản lý mã nguồn", hintEn: "Source control" },
+  { id: "ai", label: "AI", hint: "LLM, RAG, agent", hintEn: "LLM, RAG, agents" },
 ];
 
-export type GroupId = "api" | "messaging" | "design" | "concurrency" | "operations" | "deploy" | "git" | "db";
+export type GroupId = "api" | "messaging" | "design" | "concurrency" | "operations" | "deploy" | "git" | "db" | "ai" | "golang";
 
 export interface NotebookPage {
   slug: string;
@@ -38,7 +39,7 @@ export interface NotebookGroup {
   labelEn: string;
   hintEn: string;
   /** CSS class suffix used for the coloured dot and active tab */
-  tone: "api" | "msg" | "design" | "conc" | "ops" | "deploy" | "git" | "db";
+  tone: "api" | "msg" | "design" | "conc" | "ops" | "deploy" | "git" | "db" | "ai" | "go";
   pages: NotebookPage[];
 }
 
@@ -93,6 +94,18 @@ export const GROUPS: NotebookGroup[] = [
     ],
   },
   {
+    id: "golang", area: "be", label: "Go", hint: "golang", labelEn: "Go", hintEn: "golang", tone: "go",
+    pages: [
+      { slug: "versions", label: "Phiên bản", labelEn: "Versions" },
+      { slug: "runtime", label: "Runtime & GMP" },
+      { slug: "concurrency", label: "Channel & Context" },
+      { slug: "memory", label: "Bộ nhớ & GC", labelEn: "Memory & GC" },
+      { slug: "data-structures", label: "Slice, Map, Interface" },
+      { slug: "production", label: "Production" },
+      { slug: "interview", label: "Phỏng vấn", labelEn: "Interview", aside: true },
+    ],
+  },
+  {
     id: "deploy", area: "cicd", label: "Triển khai", hint: "docker, ci/cd", labelEn: "Deployment", hintEn: "docker, ci/cd", tone: "deploy",
     pages: [
       { slug: "docker", label: "Docker" },
@@ -114,6 +127,12 @@ export const GROUPS: NotebookGroup[] = [
       { slug: "mongodb", label: "MongoDB" },
       { slug: "dynamodb", label: "DynamoDB" },
       { slug: "compare", label: "So sánh", labelEn: "Compare", aside: true },
+    ],
+  },
+  {
+    id: "ai", area: "ai", label: "LLM", hint: "rag, agent", labelEn: "LLM", hintEn: "rag, agents", tone: "ai",
+    pages: [
+      { slug: "rag", label: "RAG vs Agentic RAG" },
     ],
   },
 ];
