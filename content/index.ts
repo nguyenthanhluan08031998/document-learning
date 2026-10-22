@@ -18,6 +18,7 @@ import golangMemory from "./golang/memory";
 import golangProduction from "./golang/production";
 import golangRuntime from "./golang/runtime";
 import golangVersions from "./golang/versions";
+import golangVsNodejs from "./golang/vs-nodejs";
 import apiCompare from "./api/compare";
 import apiGraphql from "./api/graphql";
 import apiGrpc from "./api/grpc";
@@ -54,6 +55,7 @@ export const PAGES: Record<string, ComponentType> = {
   "golang/production": golangProduction,
   "golang/runtime": golangRuntime,
   "golang/versions": golangVersions,
+  "golang/vs-nodejs": golangVsNodejs,
   "api/compare": apiCompare,
   "api/graphql": apiGraphql,
   "api/grpc": apiGrpc,

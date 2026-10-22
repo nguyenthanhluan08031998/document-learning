@@ -1,4 +1,4 @@
-import { Code } from "@/components/Code";
+import { CodeCompare } from "@/components/CodeCompare";
 
 // Every release from 1.0 to the current one: [version, release month, highlights]
 const RELEASES: [string, string, string][] = [
@@ -112,14 +112,18 @@ export default function GoVersionsPage() {
         <section id="gv-diff">
           <h2><span className="n">04</span>How code differs between releases</h2>
           <h3>Loop variables (1.22)</h3>
-          <Code lang="go">{`for _, v := range []int{1, 2, 3} {
+          <CodeCompare go={`for _, v := range []int{1, 2, 3} {
     go func() { fmt.Println(v) }()
 }
 // before 1.22: often prints 3 3 3 (all goroutines share v); you had to write v := v
-// since 1.22:  prints 1 2 3 in any order (each iteration has its own v)`}</Code>
+// since 1.22:  prints 1 2 3 in any order (each iteration has its own v)`} js={`for (const v of [1, 2, 3]) {
+  setTimeout(() => console.log(v)); // let/const are per-iteration: prints 1 2 3
+}
+// The old var behavior matched Go before 1.22:
+for (var i = 0; i < 3; i++) setTimeout(() => console.log(i)); // 3 3 3`} />
 
           <h3>Range over int (1.22) and iterators (1.23)</h3>
-          <Code lang="go">{`for i := range 3 { fmt.Println(i) } // 0 1 2
+          <CodeCompare go={`for i := range 3 { fmt.Println(i) } // 0 1 2
 
 // An iterator: a function taking yield; yield returns false to stop early
 func Evens(n int) iter.Seq[int] {
@@ -130,10 +134,17 @@ func Evens(n int) iter.Seq[int] {
     }
 }
 for v := range Evens(10) { fmt.Println(v) }
-keys := slices.Sorted(maps.Keys(m)) // standard packages return iterators`}</Code>
+keys := slices.Sorted(maps.Keys(m)) // standard packages return iterators`} js={`for (let i = 0; i < 3; i++) console.log(i); // 0 1 2
+
+// Iterator: a generator; the loop calls return() when it breaks early
+function* evens(n) {
+  for (let i = 0; i < n; i += 2) yield i;
+}
+for (const v of evens(10)) console.log(v);
+const keys = [...map.keys()].sort(); // built-ins already return iterators`} />
 
           <h3>Generics (1.18), generic type aliases (1.24), generic methods (1.27)</h3>
-          <Code lang="go">{`// 1.18: generic functions and types
+          <CodeCompare jsLang="ts" go={`// 1.18: generic functions and types
 func Map[T, U any](s []T, f func(T) U) []U {
     out := make([]U, 0, len(s))
     for _, v := range s { out = append(out, f(v)) }
@@ -149,10 +160,25 @@ func (s *Store) Get[T any](key string) (T, bool) {
     v, ok := s.data[key].(T)
     return v, ok
 }
-n, _ := store.Get[int]("count")`}</Code>
+n, _ := store.Get[int]("count")`} js={`// TypeScript generics
+function map<T, U>(s: T[], f: (v: T) => U): U[] {
+  return s.map(f);
+}
+
+// Alias with a type parameter
+type Set<T> = Map<T, true>;
+
+// Method with its own type parameter
+class Store {
+  private data = new Map<string, unknown>();
+  get<T>(key: string): T | undefined {
+    return this.data.get(key) as T | undefined;
+  }
+}
+const n = store.get<number>("count");`} />
 
           <h3>Standard router (1.22), WaitGroup.Go (1.25), new(expr) (1.26)</h3>
-          <Code lang="go">{`mux := http.NewServeMux()
+          <CodeCompare go={`mux := http.NewServeMux()
 mux.HandleFunc("GET /users/{id}", func(w http.ResponseWriter, r *http.Request) {
     id := r.PathValue("id") // before 1.22 you needed gorilla/mux, chi...
 })
@@ -161,7 +187,18 @@ var wg sync.WaitGroup
 wg.Go(func() { work() }) // replaces wg.Add(1); go func() { defer wg.Done(); work() }()
 wg.Wait()
 
-p := new(int64(30)) // 1.26: pointer to an initial value, handy for optional *T fields`}</Code>
+p := new(int64(30)) // 1.26: pointer to an initial value, handy for optional *T fields`} js={`import express from "express";
+
+const app = express();
+app.get("/users/:id", (req, res) => {
+  const id = req.params.id; // Node has no stdlib router with path params
+});
+
+// WaitGroup: Promise.all
+await Promise.all([work(), work()]);
+
+// new(30): no pointers in JS; an optional field is just undefined
+const p = 30;`} />
         </section>
 
         <section id="gv-support">

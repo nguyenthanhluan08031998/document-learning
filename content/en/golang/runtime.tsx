@@ -1,4 +1,4 @@
-import { Code } from "@/components/Code";
+import { CodeCompare } from "@/components/CodeCompare";
 import { Box, Label, Markers } from "@/components/Svg";
 
 const COLS = [40, 330, 620];
@@ -155,11 +155,20 @@ export default function GoRuntimePage() {
             <li>Raising GOMAXPROCS does not speed up I/O; it is only how many goroutines run Go code in parallel.</li>
             <li><code>runtime.LockOSThread()</code> pins a goroutine to one M, needed for C libraries that use thread-local state (OpenGL, some drivers).</li>
           </ul>
-          <Code lang="go">{`fmt.Println(runtime.GOMAXPROCS(0), runtime.NumGoroutine(), runtime.NumCPU())
+          <CodeCompare go={`fmt.Println(runtime.GOMAXPROCS(0), runtime.NumGoroutine(), runtime.NumCPU())
 
 // Print what the scheduler is doing every 1000 ms
 // GODEBUG=schedtrace=1000 ./app
-// SCHED 2005ms: gomaxprocs=8 idleprocs=6 threads=12 runqueue=0 [0 1 0 0 0 0 0 0]`}</Code>
+// SCHED 2005ms: gomaxprocs=8 idleprocs=6 threads=12 runqueue=0 [0 1 0 0 0 0 0 0]`} js={`import os from "node:os";
+import { monitorEventLoopDelay } from "node:perf_hooks";
+
+console.log(os.availableParallelism(), process.getActiveResourcesInfo().length);
+// One JS thread + the libuv thread pool (UV_THREADPOOL_SIZE, default 4)
+
+// Measure the event loop instead of a scheduler trace
+const h = monitorEventLoopDelay();
+h.enable();
+setInterval(() => console.log("p99 delay ms:", h.percentile(99) / 1e6), 1000);`} />
         </section>
 
         <section id="gr-qa">

@@ -1,4 +1,4 @@
-import { Code } from "@/components/Code";
+import { CodeCompare } from "@/components/CodeCompare";
 import { Box, Label, Markers } from "@/components/Svg";
 
 const ARR = ["10", "20", "30", "40", "50", "", ""];
@@ -62,7 +62,7 @@ export default function GoDataStructuresPage() {
             <li>With spare capacity, <code>append</code> writes into the old array and bumps len. Without it, it allocates a new array, copies over, and returns a new header pointing at it. That is why you write <code>s = append(s, x)</code>.</li>
             <li>Growth (since 1.18): under 256 capacity it doubles; above that it tapers from 2x towards about 1.25x, then rounds up to the allocator&apos;s size class.</li>
           </ul>
-          <Code lang="go">{`func modify(s []int) {
+          <CodeCompare go={`func modify(s []int) {
     s[0] = 100          // the header is copied, but ptr points to the same array → caller sees it
     s = append(s, 4)    // only changes len/ptr of the copy → caller does not see it
 }
@@ -79,7 +79,23 @@ fmt.Println(a)         // [1 2 99 4]
 c := a[:2:2]           // three-index slice: cap = 2, append must allocate a new array
 
 // Memory trap: a small slice of a big array keeps the whole big array alive
-head := bytes.Clone(big[:64])`}</Code>
+head := bytes.Clone(big[:64])`} js={`// Arrays are passed by reference: both changes are visible to the caller
+function modify(arr) {
+  arr[0] = 100;
+  arr.push(4);
+}
+const s = new Array(3).fill(0);
+modify(s);
+console.log(s, s.length); // [100, 0, 0, 4] 4
+
+// slice() copies; a typed-array view shares memory like a Go sub-slice
+const a = new Int32Array([1, 2, 3, 4]);
+const b = a.subarray(0, 2); // shares the buffer with a
+b[0] = 99;                  // a[0] is now 99
+const c = a.slice(0, 2);    // independent copy
+
+// A small view keeps the whole ArrayBuffer alive: copy it to release the big one
+const head = big.slice(0, 64);`} />
         </section>
 
         <section id="gd-map">
@@ -107,9 +123,11 @@ head := bytes.Clone(big[:64])`}</Code>
               </tbody>
             </table>
           </div>
-          <Code lang="go">{`// Catch data races in tests and trial runs
+          <CodeCompare jsLang="bash" go={`// Catch data races in tests and trial runs
 go test -race ./...
-go run -race .`}</Code>
+go run -race .`} js={`# A single JS thread has no data race; races are logical (await interleaving).
+# Test with real concurrency (worker_threads) through the built-in runner:
+node --test`} />
         </section>
 
         <section id="gd-iface">
@@ -120,7 +138,7 @@ go run -race .`}</Code>
           </div>
           <p><b>Interface satisfaction</b> is implicit: a type with all the methods satisfies the interface, no <code>implements</code> needed. Check at compile time with <code>var _ Repo = (*PgRepo)(nil)</code>.</p>
           <p><b>Cost of calling through an interface:</b> one indirect call via the itab, no inlining (unless PGO devirtualises it), and assigning a value to an interface often makes it escape to the heap. It matters in hot loops; it does not matter at the service/repository layer.</p>
-          <Code lang="go">{`// The nil interface trap: an interface is nil only when both _type and data are nil
+          <CodeCompare go={`// The nil interface trap: an interface is nil only when both _type and data are nil
 func find() error {
     var err *NotFoundError = nil
     return err             // returns iface{tab: *NotFoundError, data: nil}
@@ -128,7 +146,18 @@ func find() error {
 fmt.Println(find() == nil) // false!  → return a literal nil when there is no error
 
 // 1.26: errors.AsType instead of errors.As with a temporary variable
-if nf, ok := errors.AsType[*NotFoundError](err); ok { ... }`}</Code>
+if nf, ok := errors.AsType[*NotFoundError](err); ok { ... }`} js={`// No nil-interface trap: null is a plain value
+function find() {
+  const err = null;
+  return err;                   // null
+}
+console.log(find() === null);   // true
+
+// Pitfall instead: null vs undefined
+console.log(null == undefined, null === undefined); // true false
+
+// Typed errors: instanceof replaces errors.As
+if (err instanceof NotFoundError) { ... }`} />
         </section>
       </main>
     </div>

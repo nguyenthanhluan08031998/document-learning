@@ -1,4 +1,4 @@
-import { Code } from "@/components/Code";
+import { CodeCompare } from "@/components/CodeCompare";
 import { Box, Label, Markers } from "@/components/Svg";
 
 // Tri-colour objects: [name, x, y, colour]
@@ -49,7 +49,7 @@ export default function GoMemoryPage() {
         <section id="gm-escape">
           <h2><span className="n">01</span>Stack, heap and escape analysis</h2>
           <p>Go does not let you choose where to allocate. The compiler runs <b>escape analysis</b>: if it can prove a variable does not outlive the function that created it, the variable goes on the stack (gone when the function returns); otherwise it <b>escapes</b> to the heap and the GC manages it.</p>
-          <Code lang="go">{`func newInt() *int {
+          <CodeCompare go={`func newInt() *int {
     x := 1      // tiny, but still on the heap: a pointer to x outlives the function
     return &x
 }
@@ -64,7 +64,17 @@ func buf(n int) []byte {
 
 // go build -gcflags='-m' ./...
 // ./main.go:2:5: moved to heap: x
-// ./main.go:7:16: v escapes to heap`}</Code>
+// ./main.go:7:16: v escapes to heap`} js={`// V8 does escape analysis in the JIT; you cannot see or force it.
+// Objects live on the heap, small integers (Smi) are stored inline.
+function newInt() {
+  const x = { v: 1 }; // heap object, collected once unreachable
+  return x;
+}
+
+// Inspect the heap instead
+// node --trace-gc app.js
+// node --heapsnapshot-signal=SIGUSR2 app.js
+console.log(process.memoryUsage().heapUsed);`} />
           <div className="pp">
             <div><span className="pl">Usually escapes</span>Returning a pointer to a local; assigning to an interface; a closure capturing a variable and outliving the function; storing in a global, map or channel; slices with a dynamic or very large size.</div>
             <div><span className="pl">Does not escape</span>Values returned by value; pointers only passed down to callees that do not keep them; <code>make([]T, 64)</code> with a small constant.</div>
@@ -130,18 +140,23 @@ func buf(n int) []byte {
             <div><h4>GOGC (default 100)</h4>The next GC runs when the heap has grown by GOGC% over the live heap after the last GC. Live 200 MB, GOGC=100 → GC at 400 MB. Higher GOGC: fewer GCs, more RAM. <code>GOGC=off</code> disables the GC.</div>
             <div><h4>GOMEMLIMIT (1.19)</h4>A soft limit on total runtime memory. Close to the limit the GC runs more often regardless of GOGC. Set it to about 80–90% of the container memory limit to avoid OOM kills.</div>
           </div>
-          <Code lang="bash">{`# 1 GiB container: sparse GCs while RAM is free, denser near 900 MiB
+          <CodeCompare goLang="bash" jsLang="bash" go={`# 1 GiB container: sparse GCs while RAM is free, denser near 900 MiB
 GOGC=200 GOMEMLIMIT=900MiB ./app
 
 # print every GC: time, heap before/after, CPU %
 GODEBUG=gctrace=1 ./app
-# gc 12 @3.1s 2%: 0.03+1.8+0.02 ms clock, ... 180->184->95 MB, 190 MB goal, 8 P`}</Code>
+# gc 12 @3.1s 2%: 0.03+1.8+0.02 ms clock, ... 180->184->95 MB, 190 MB goal, 8 P`} js={`# container 1 GiB: cap the old space so V8 collects before the OOM killer
+node --max-old-space-size=900 app.js
+
+# trace each GC: type, heap before -> after, time
+node --trace-gc app.js
+# ... Mark-Compact 180.0 (190.2) -> 95.1 (110.4) MB, 8.2 ms`} />
           <div className="note">If the live heap really sits close to GOMEMLIMIT, the GC runs nonstop (a death spiral) and CPU climbs. A soft limit does not replace fixing a leak.</div>
         </section>
 
         <section id="gm-reduce">
           <h2><span className="n">05</span>Reducing GC pressure</h2>
-          <Code lang="go">{`// 1. Preallocate enough capacity
+          <CodeCompare go={`// 1. Preallocate enough capacity
 out := make([]Item, 0, len(in))
 
 // 2. Reuse buffers through sync.Pool (gradually emptied by each GC; only for temporary data)
@@ -159,13 +174,25 @@ func render(v any) []byte {
 // 4. Prefer []T over []*T when it works: fewer objects for the GC to scan
 // 5. Measure before optimising
 //    go test -bench=. -benchmem   →  allocs/op
-//    func BenchmarkX(b *testing.B) { for b.Loop() { X() } }  // b.Loop since 1.24`}</Code>
+//    func BenchmarkX(b *testing.B) { for b.Loop() { X() } }  // b.Loop since 1.24`} js={`// 1. Preallocate
+const out = new Array(input.length);
+
+// 2. Buffers: Buffer.allocUnsafe draws from an internal pool; copy out what you keep
+function render(v) {
+  return Buffer.from(JSON.stringify(v));
+}
+
+// 3. Join strings with array.join, write into a preallocated Buffer
+// 4. Prefer flat arrays of numbers (typed arrays) over arrays of objects: less for GC to trace
+// 5. Measure before optimizing
+//    node --cpu-prof app.js   ·   node --heap-prof app.js
+//    benchmark with tinybench or mitata`} />
         </section>
 
         <section id="gm-padding">
           <h2><span className="n">06</span>Data alignment and struct padding</h2>
           <p>Each field must sit at an address divisible by its alignment (8 bytes for int64), so the compiler inserts padding between fields. Ordering fields from largest to smallest reduces the waste.</p>
-          <Code lang="go">{`type Bad struct {  // 24 bytes
+          <CodeCompare go={`type Bad struct {  // 24 bytes
     a bool         // 1 + 7 padding
     b int64        // 8
     c bool         // 1 + 7 padding
@@ -178,7 +205,18 @@ type Good struct { // 16 bytes
 }
 
 fmt.Println(unsafe.Sizeof(Bad{}), unsafe.Sizeof(Good{})) // 24 16
-// Tool: fieldalignment (golang.org/x/tools) suggests a better order`}</Code>
+// Tool: fieldalignment (golang.org/x/tools) suggests a better order`} js={`// JS objects have no manual layout: V8 picks hidden classes.
+// Keep the object shape stable so inline caches stay fast.
+const bad = { a: true };
+bad.b = 1;                       // adding a field later changes the shape
+const good = { a: true, b: 1 };  // same fields, same order, from the start
+
+// Need an exact layout? Use a DataView over an ArrayBuffer
+const buf = new DataView(new ArrayBuffer(16));
+buf.setBigInt64(0, 1n); // b at offset 0
+buf.setUint8(8, 1);     // a at offset 8
+buf.setUint8(9, 1);     // c at offset 9
+console.log(buf.byteLength); // 16`} />
           <p className="sub">Worth doing for structs with millions of copies in memory or in large slices. For ordinary structs, prefer the order that reads best.</p>
         </section>
       </main>

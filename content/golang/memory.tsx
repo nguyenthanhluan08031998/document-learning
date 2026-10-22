@@ -1,4 +1,4 @@
-import { Code } from "@/components/Code";
+import { CodeCompare } from "@/components/CodeCompare";
 import { Box, Label, Markers } from "@/components/Svg";
 
 // Tri-colour objects: [name, x, y, colour]
@@ -49,7 +49,7 @@ export default function GoMemoryPage() {
         <section id="gm-escape">
           <h2><span className="n">01</span>Stack, heap và escape analysis</h2>
           <p>Go không cho bạn chọn cấp phát ở đâu. Compiler chạy <b>escape analysis</b>: nếu chứng minh được biến không sống lâu hơn hàm tạo ra nó thì đặt trên stack (tự mất khi hàm return); nếu không chắc thì biến <b>escape</b> lên heap và GC phải quản lý.</p>
-          <Code lang="go">{`func newInt() *int {
+          <CodeCompare go={`func newInt() *int {
     x := 1      // nhỏ, nhưng vẫn lên heap: con trỏ tới x sống sau khi hàm return
     return &x
 }
@@ -64,7 +64,17 @@ func buf(n int) []byte {
 
 // go build -gcflags='-m' ./...
 // ./main.go:2:5: moved to heap: x
-// ./main.go:7:16: v escapes to heap`}</Code>
+// ./main.go:7:16: v escapes to heap`} js={`// V8 does escape analysis in the JIT; you cannot see or force it.
+// Objects live on the heap, small integers (Smi) are stored inline.
+function newInt() {
+  const x = { v: 1 }; // heap object, collected once unreachable
+  return x;
+}
+
+// Inspect the heap instead
+// node --trace-gc app.js
+// node --heapsnapshot-signal=SIGUSR2 app.js
+console.log(process.memoryUsage().heapUsed);`} />
           <div className="pp">
             <div><span className="pl">Hay escape</span>Trả con trỏ tới biến local; gán vào interface; closure bắt biến và sống lâu hơn hàm; lưu vào biến global, map, channel; slice có kích thước động hoặc quá lớn.</div>
             <div><span className="pl">Không escape</span>Giá trị trả về theo value; con trỏ chỉ truyền xuống hàm con không giữ lại; <code>make([]T, 64)</code> với hằng số nhỏ.</div>
@@ -130,18 +140,23 @@ func buf(n int) []byte {
             <div><h4>GOGC (mặc định 100)</h4>Chạy GC tiếp theo khi heap tăng thêm GOGC% so với heap còn sống sau lần GC trước. Live 200 MB, GOGC=100 → GC ở 400 MB. Tăng GOGC: ít GC hơn, tốn RAM hơn. <code>GOGC=off</code> tắt GC.</div>
             <div><h4>GOMEMLIMIT (1.19)</h4>Giới hạn mềm cho tổng bộ nhớ runtime. Gần chạm giới hạn thì GC chạy dày hơn bất kể GOGC. Đặt khoảng 80–90% memory limit của container để tránh bị OOM kill.</div>
           </div>
-          <Code lang="bash">{`# container 1 GiB: GC thưa khi còn dư RAM, dày lên khi gần 900 MiB
+          <CodeCompare goLang="bash" jsLang="bash" go={`# container 1 GiB: GC thưa khi còn dư RAM, dày lên khi gần 900 MiB
 GOGC=200 GOMEMLIMIT=900MiB ./app
 
 # xem từng lần GC: thời gian, heap trước/sau, % CPU
 GODEBUG=gctrace=1 ./app
-# gc 12 @3.1s 2%: 0.03+1.8+0.02 ms clock, ... 180->184->95 MB, 190 MB goal, 8 P`}</Code>
+# gc 12 @3.1s 2%: 0.03+1.8+0.02 ms clock, ... 180->184->95 MB, 190 MB goal, 8 P`} js={`# container 1 GiB: cap the old space so V8 collects before the OOM killer
+node --max-old-space-size=900 app.js
+
+# trace each GC: type, heap before -> after, time
+node --trace-gc app.js
+# ... Mark-Compact 180.0 (190.2) -> 95.1 (110.4) MB, 8.2 ms`} />
           <div className="note">Chỉ đặt GOMEMLIMIT mà heap sống thật sự gần chạm giới hạn thì GC chạy liên tục (death spiral), CPU lên cao. Giới hạn mềm không thay được việc sửa leak.</div>
         </section>
 
         <section id="gm-reduce">
           <h2><span className="n">05</span>Giảm áp lực GC</h2>
-          <Code lang="go">{`// 1. Cấp phát trước đủ dung lượng
+          <CodeCompare go={`// 1. Cấp phát trước đủ dung lượng
 out := make([]Item, 0, len(in))
 
 // 2. Tái sử dụng buffer qua sync.Pool (bị xoá dần sau mỗi lần GC, chỉ dùng cho dữ liệu tạm)
@@ -159,13 +174,25 @@ func render(v any) []byte {
 // 4. Tránh []*T khi []T đủ dùng: ít object cho GC quét
 // 5. Đo trước khi tối ưu
 //    go test -bench=. -benchmem   →  allocs/op
-//    func BenchmarkX(b *testing.B) { for b.Loop() { X() } }  // b.Loop từ 1.24`}</Code>
+//    func BenchmarkX(b *testing.B) { for b.Loop() { X() } }  // b.Loop từ 1.24`} js={`// 1. Preallocate
+const out = new Array(input.length);
+
+// 2. Buffers: Buffer.allocUnsafe draws from an internal pool; copy out what you keep
+function render(v) {
+  return Buffer.from(JSON.stringify(v));
+}
+
+// 3. Join strings with array.join, write into a preallocated Buffer
+// 4. Prefer flat arrays of numbers (typed arrays) over arrays of objects: less for GC to trace
+// 5. Measure before optimizing
+//    node --cpu-prof app.js   ·   node --heap-prof app.js
+//    benchmark with tinybench or mitata`} />
         </section>
 
         <section id="gm-padding">
           <h2><span className="n">06</span>Data alignment và struct padding</h2>
           <p>Mỗi field phải nằm ở địa chỉ chia hết cho kích thước căn lề của nó (int64 là 8 byte), nên compiler chèn byte trống giữa các field. Xếp field từ lớn tới nhỏ giảm phần thừa.</p>
-          <Code lang="go">{`type Bad struct {  // 24 byte
+          <CodeCompare go={`type Bad struct {  // 24 byte
     a bool         // 1 + 7 byte đệm
     b int64        // 8
     c bool         // 1 + 7 byte đệm
@@ -178,7 +205,18 @@ type Good struct { // 16 byte
 }
 
 fmt.Println(unsafe.Sizeof(Bad{}), unsafe.Sizeof(Good{})) // 24 16
-// Công cụ: fieldalignment (golang.org/x/tools) tự gợi ý thứ tự tốt hơn`}</Code>
+// Công cụ: fieldalignment (golang.org/x/tools) tự gợi ý thứ tự tốt hơn`} js={`// JS objects have no manual layout: V8 picks hidden classes.
+// Keep the object shape stable so inline caches stay fast.
+const bad = { a: true };
+bad.b = 1;                       // adding a field later changes the shape
+const good = { a: true, b: 1 };  // same fields, same order, from the start
+
+// Need an exact layout? Use a DataView over an ArrayBuffer
+const buf = new DataView(new ArrayBuffer(16));
+buf.setBigInt64(0, 1n); // b at offset 0
+buf.setUint8(8, 1);     // a at offset 8
+buf.setUint8(9, 1);     // c at offset 9
+console.log(buf.byteLength); // 16`} />
           <p className="sub">Đáng làm với struct có hàng triệu bản trong bộ nhớ hoặc nằm trong slice lớn. Với struct thường, ưu tiên thứ tự dễ đọc.</p>
         </section>
       </main>

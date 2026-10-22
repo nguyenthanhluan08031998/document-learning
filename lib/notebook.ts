@@ -97,6 +97,7 @@ export const GROUPS: NotebookGroup[] = [
     id: "golang", area: "be", label: "Go", hint: "golang", labelEn: "Go", hintEn: "golang", tone: "go",
     pages: [
       { slug: "versions", label: "Phiên bản", labelEn: "Versions" },
+      { slug: "vs-nodejs", label: "Go vs Node.js" },
       { slug: "runtime", label: "Runtime & GMP" },
       { slug: "concurrency", label: "Channel & Context" },
       { slug: "memory", label: "Bộ nhớ & GC", labelEn: "Memory & GC" },

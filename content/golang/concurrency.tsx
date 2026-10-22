@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Code } from "@/components/Code";
+import { CodeCompare } from "@/components/CodeCompare";
 import { Box, Label, Markers } from "@/components/Svg";
 
 const FIELDS: [string, string][] = [
@@ -111,7 +111,7 @@ export default function GoConcurrencyPage() {
             <div><h4>Channel</h4>Chuyển quyền sở hữu dữ liệu giữa các goroutine (pipeline, worker pool), phát tín hiệu xong/huỷ, giới hạn số việc chạy cùng lúc (semaphore), kết hợp nhiều nguồn sự kiện bằng <code>select</code>.</div>
             <div><h4>sync.Mutex · RWMutex · atomic</h4>Bảo vệ một trạng thái dùng chung (cache, counter, map). Ngắn, nhanh và dễ đọc hơn dùng channel. RWMutex khi đọc nhiều hơn ghi rất nhiều; với counter đơn giản dùng <code>atomic.Int64</code>.</div>
           </div>
-          <Code lang="go">{`type Counter struct {
+          <CodeCompare go={`type Counter struct {
     mu sync.Mutex
     m  map[string]int
 }
@@ -121,13 +121,24 @@ func (c *Counter) Inc(key string) {
     defer c.mu.Unlock()
     c.m[key]++
 }
-// Không copy struct chứa Mutex (truyền *Counter). go vet báo lỗi copylocks.`}</Code>
+// Không copy struct chứa Mutex (truyền *Counter). go vet báo lỗi copylocks.`} js={`// Node runs JS on a single thread, so a plain Map needs no lock.
+// A mutex only matters for state shared across worker_threads (use Atomics).
+class Counter {
+  m = new Map();
+  inc(key) {
+    this.m.set(key, (this.m.get(key) ?? 0) + 1);
+  }
+}
+
+// Closest thing to atomic.Int64: Atomics on a SharedArrayBuffer
+const counter = new Int32Array(new SharedArrayBuffer(4));
+Atomics.add(counter, 0, 1);`} />
         </section>
 
         <section id="gc-leak">
           <h2><span className="n">05</span>Goroutine leak</h2>
           <p>Goroutine bị chặn mãi trên channel hay lock không bao giờ được GC thu hồi: stack và mọi thứ nó tham chiếu nằm lại trong bộ nhớ. Số goroutine tăng dần theo thời gian là dấu hiệu rõ nhất.</p>
-          <Code lang="go">{`// Leak: hết timeout thì không ai đọc ch nữa, goroutine kẹt mãi ở ch <- r
+          <CodeCompare go={`// Leak: hết timeout thì không ai đọc ch nữa, goroutine kẹt mãi ở ch <- r
 func fetch(ctx context.Context) (Result, error) {
     ch := make(chan Result)            // sửa: make(chan Result, 1)
     go func() { ch <- slowCall() }()
@@ -137,7 +148,17 @@ func fetch(ctx context.Context) (Result, error) {
     case <-ctx.Done():
         return Result{}, ctx.Err()
     }
-}`}</Code>
+}`} js={`// Leak: a promise that never settles keeps its closure (and timer) alive.
+// Fix: always clear the timer and abort the underlying call.
+async function fetchWithTimeout(ms) {
+  const ac = new AbortController();
+  const timer = setTimeout(() => ac.abort(), ms);
+  try {
+    return await slowCall({ signal: ac.signal });
+  } finally {
+    clearTimeout(timer); // forgetting this keeps the timer alive
+  }
+}`} />
           <ul className="plain">
             <li>Nguyên nhân hay gặp: gửi vào channel không ai đọc; đọc channel không ai close; quên <code>cancel()</code> của context; worker <code>for range ch</code> mà producer không close; quên <code>ticker.Stop()</code> (trước 1.23).</li>
             <li>Cách phát hiện: theo dõi <code>runtime.NumGoroutine()</code>, xem <code>/debug/pprof/goroutine?debug=2</code>, test bằng <code>go.uber.org/goleak</code>. Từ <b>1.27</b> có profile <code>goroutineleak</code> chính thức: runtime dùng GC để tìm goroutine chặn trên thứ không còn ai với tới.</li>
@@ -147,7 +168,7 @@ func fetch(ctx context.Context) (Result, error) {
         <section id="gc-context">
           <h2><span className="n">06</span>Context: lan truyền huỷ</h2>
           <p>Context tạo thành một cây. Mỗi <code>WithCancel</code>/<code>WithTimeout</code> tạo node con, đăng ký vào danh sách <code>children</code> của cha. Khi cha bị huỷ, nó đóng channel <code>Done()</code> của mình rồi gọi cancel cho mọi con, cứ thế xuống tới lá. Huỷ con không ảnh hưởng cha.</p>
-          <Code lang="go">{`func (h *Handler) GetOrder(w http.ResponseWriter, r *http.Request) {
+          <CodeCompare go={`func (h *Handler) GetOrder(w http.ResponseWriter, r *http.Request) {
     ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second) // client ngắt → r.Context() huỷ
     defer cancel()                       // luôn gọi, kể cả khi đã timeout: gỡ khỏi cây cha, dừng timer
 
@@ -166,7 +187,23 @@ func worker(ctx context.Context, jobs <-chan Job) {
             process(ctx, j)
         }
     }
-}`}</Code>
+}`} js={`// AbortSignal plays the role of context.Context
+app.get("/orders/:id", async (req, res) => {
+  const ac = new AbortController();
+  req.on("close", () => ac.abort()); // client disconnected
+  const signal = AbortSignal.any([ac.signal, AbortSignal.timeout(2000)]);
+
+  const order = await repo.find(req.params.id, { signal }); // driver must honor the signal
+  ...
+});
+
+// Background worker: takes a signal, exits when it is aborted
+async function worker(signal, jobs /* AsyncIterable<Job> */) {
+  for await (const j of jobs) {
+    if (signal.aborted) return;
+    await process(signal, j);
+  }
+}`} />
           <ul className="plain">
             <li><b>Leak context:</b> quên gọi <code>cancel</code> làm node con nằm trong cây cha (và timer) tới khi cha bị huỷ; với context gốc sống mãi thì là leak thật. <code>go vet</code> có kiểm tra lostcancel.</li>
             <li>Không lưu context trong struct; truyền làm tham số đầu tiên. <code>context.Value</code> chỉ cho dữ liệu theo request (trace ID, user), không truyền tham số nghiệp vụ.</li>

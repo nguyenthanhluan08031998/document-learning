@@ -1,4 +1,4 @@
-import { Code } from "@/components/Code";
+import { CodeCompare } from "@/components/CodeCompare";
 import { Box, Label, Markers } from "@/components/Svg";
 
 const ARR = ["10", "20", "30", "40", "50", "", ""];
@@ -62,7 +62,7 @@ export default function GoDataStructuresPage() {
             <li>Còn cap: <code>append</code> ghi vào mảng cũ, tăng len. Hết cap: cấp phát mảng mới, copy sang, trả header mới trỏ vào mảng mới. Vì vậy phải viết <code>s = append(s, x)</code>.</li>
             <li>Cách tăng (từ 1.18): cap dưới 256 thì gấp đôi; lớn hơn thì tăng dần từ 2x xuống khoảng 1.25x, sau đó làm tròn lên theo size class của bộ cấp phát.</li>
           </ul>
-          <Code lang="go">{`func modify(s []int) {
+          <CodeCompare go={`func modify(s []int) {
     s[0] = 100          // header được copy, nhưng ptr trỏ cùng mảng → caller thấy thay đổi
     s = append(s, 4)    // chỉ đổi len/ptr của bản copy → caller không thấy
 }
@@ -79,7 +79,23 @@ fmt.Println(a)         // [1 2 99 4]
 c := a[:2:2]           // slice ba chỉ số: cap = 2, append buộc phải cấp mảng mới
 
 // Bẫy bộ nhớ: giữ slice nhỏ của mảng lớn giữ cả mảng lớn sống
-head := bytes.Clone(big[:64])`}</Code>
+head := bytes.Clone(big[:64])`} js={`// Arrays are passed by reference: both changes are visible to the caller
+function modify(arr) {
+  arr[0] = 100;
+  arr.push(4);
+}
+const s = new Array(3).fill(0);
+modify(s);
+console.log(s, s.length); // [100, 0, 0, 4] 4
+
+// slice() copies; a typed-array view shares memory like a Go sub-slice
+const a = new Int32Array([1, 2, 3, 4]);
+const b = a.subarray(0, 2); // shares the buffer with a
+b[0] = 99;                  // a[0] is now 99
+const c = a.slice(0, 2);    // independent copy
+
+// A small view keeps the whole ArrayBuffer alive: copy it to release the big one
+const head = big.slice(0, 64);`} />
         </section>
 
         <section id="gd-map">
@@ -107,9 +123,11 @@ head := bytes.Clone(big[:64])`}</Code>
               </tbody>
             </table>
           </div>
-          <Code lang="go">{`// Phát hiện data race khi test và chạy thử
+          <CodeCompare jsLang="bash" go={`// Phát hiện data race khi test và chạy thử
 go test -race ./...
-go run -race .`}</Code>
+go run -race .`} js={`# A single JS thread has no data race; races are logical (await interleaving).
+# Test with real concurrency (worker_threads) through the built-in runner:
+node --test`} />
         </section>
 
         <section id="gd-iface">
@@ -120,7 +138,7 @@ go run -race .`}</Code>
           </div>
           <p><b>Interface satisfaction</b> là ngầm định: kiểu có đủ method thì thoả, không cần khai báo <code>implements</code>. Kiểm tra lúc biên dịch bằng <code>var _ Repo = (*PgRepo)(nil)</code>.</p>
           <p><b>Chi phí gọi qua interface:</b> một lần gọi gián tiếp qua itab, compiler không inline được (trừ khi PGO devirtualize), và gán giá trị vào interface thường làm nó escape lên heap. Đáng kể trong vòng lặp nóng; không đáng kể ở tầng service/repository.</p>
-          <Code lang="go">{`// Bẫy nil interface: interface chỉ nil khi cả _type và data đều nil
+          <CodeCompare go={`// Bẫy nil interface: interface chỉ nil khi cả _type và data đều nil
 func find() error {
     var err *NotFoundError = nil
     return err             // trả iface{tab: *NotFoundError, data: nil}
@@ -128,7 +146,18 @@ func find() error {
 fmt.Println(find() == nil) // false!  → trả thẳng nil khi không có lỗi
 
 // 1.26: errors.AsType thay cho errors.As với biến tạm
-if nf, ok := errors.AsType[*NotFoundError](err); ok { ... }`}</Code>
+if nf, ok := errors.AsType[*NotFoundError](err); ok { ... }`} js={`// No nil-interface trap: null is a plain value
+function find() {
+  const err = null;
+  return err;                   // null
+}
+console.log(find() === null);   // true
+
+// Pitfall instead: null vs undefined
+console.log(null == undefined, null === undefined); // true false
+
+// Typed errors: instanceof replaces errors.As
+if (err instanceof NotFoundError) { ... }`} />
         </section>
       </main>
     </div>

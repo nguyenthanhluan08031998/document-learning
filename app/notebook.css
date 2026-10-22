@@ -154,6 +154,9 @@ pre.code{font-family:var(--f-mono);font-size:12.5px;line-height:1.6;background:v
   border-radius:10px;padding:14px 16px;overflow-x:auto;margin:12px 0;min-width:0}
 pre.code code{background:none;padding:0;font-size:inherit}
 .cmp > .code-wrap pre.code{margin:0}
+.cmp.code-cmp > div{background:none;border:0;padding:0;min-width:0}
+.code-cmp .code-lbl{font-size:12px;font-weight:600;color:var(--muted);margin:0 0 4px}
+.code-cmp pre.code{margin:0}
 
 /* App header: group tabs on top, notebook tabs below */
 .appbar{border-bottom:1px solid var(--line);background:var(--surface)}

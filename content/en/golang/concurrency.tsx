@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Code } from "@/components/Code";
+import { CodeCompare } from "@/components/CodeCompare";
 import { Box, Label, Markers } from "@/components/Svg";
 
 const FIELDS: [string, string][] = [
@@ -111,7 +111,7 @@ export default function GoConcurrencyPage() {
             <div><h4>Channel</h4>Hand ownership of data between goroutines (pipelines, worker pools), signal done/cancel, limit how much runs at once (semaphore), combine several event sources with <code>select</code>.</div>
             <div><h4>sync.Mutex · RWMutex · atomic</h4>Protect shared state (cache, counter, map). Shorter, faster and easier to read than a channel. RWMutex when reads vastly outnumber writes; for a simple counter use <code>atomic.Int64</code>.</div>
           </div>
-          <Code lang="go">{`type Counter struct {
+          <CodeCompare go={`type Counter struct {
     mu sync.Mutex
     m  map[string]int
 }
@@ -121,13 +121,24 @@ func (c *Counter) Inc(key string) {
     defer c.mu.Unlock()
     c.m[key]++
 }
-// Never copy a struct holding a Mutex (pass *Counter). go vet reports copylocks.`}</Code>
+// Never copy a struct holding a Mutex (pass *Counter). go vet reports copylocks.`} js={`// Node runs JS on a single thread, so a plain Map needs no lock.
+// A mutex only matters for state shared across worker_threads (use Atomics).
+class Counter {
+  m = new Map();
+  inc(key) {
+    this.m.set(key, (this.m.get(key) ?? 0) + 1);
+  }
+}
+
+// Closest thing to atomic.Int64: Atomics on a SharedArrayBuffer
+const counter = new Int32Array(new SharedArrayBuffer(4));
+Atomics.add(counter, 0, 1);`} />
         </section>
 
         <section id="gc-leak">
           <h2><span className="n">05</span>Goroutine leaks</h2>
           <p>A goroutine blocked forever on a channel or lock is never reclaimed by the GC: its stack and everything it references stay in memory. A goroutine count that keeps climbing is the clearest sign.</p>
-          <Code lang="go">{`// Leak: after the timeout nobody reads ch, so the goroutine is stuck at ch <- r forever
+          <CodeCompare go={`// Leak: after the timeout nobody reads ch, so the goroutine is stuck at ch <- r forever
 func fetch(ctx context.Context) (Result, error) {
     ch := make(chan Result)            // fix: make(chan Result, 1)
     go func() { ch <- slowCall() }()
@@ -137,7 +148,17 @@ func fetch(ctx context.Context) (Result, error) {
     case <-ctx.Done():
         return Result{}, ctx.Err()
     }
-}`}</Code>
+}`} js={`// Leak: a promise that never settles keeps its closure (and timer) alive.
+// Fix: always clear the timer and abort the underlying call.
+async function fetchWithTimeout(ms) {
+  const ac = new AbortController();
+  const timer = setTimeout(() => ac.abort(), ms);
+  try {
+    return await slowCall({ signal: ac.signal });
+  } finally {
+    clearTimeout(timer); // forgetting this keeps the timer alive
+  }
+}`} />
           <ul className="plain">
             <li>Usual causes: sending on a channel nobody reads; reading a channel nobody closes; forgetting a context&apos;s <code>cancel()</code>; a <code>for range ch</code> worker whose producer never closes; forgetting <code>ticker.Stop()</code> (before 1.23).</li>
             <li>How to find them: watch <code>runtime.NumGoroutine()</code>, read <code>/debug/pprof/goroutine?debug=2</code>, test with <code>go.uber.org/goleak</code>. Since <b>1.27</b> the <code>goroutineleak</code> profile is GA: the runtime uses the GC to find goroutines blocked on something nothing can reach any more.</li>
@@ -147,7 +168,7 @@ func fetch(ctx context.Context) (Result, error) {
         <section id="gc-context">
           <h2><span className="n">06</span>Context: cancellation propagation</h2>
           <p>Contexts form a tree. Each <code>WithCancel</code>/<code>WithTimeout</code> creates a child and registers it in the parent&apos;s <code>children</code> set. When a parent is cancelled it closes its own <code>Done()</code> channel and cancels every child, all the way down to the leaves. Cancelling a child does not affect the parent.</p>
-          <Code lang="go">{`func (h *Handler) GetOrder(w http.ResponseWriter, r *http.Request) {
+          <CodeCompare go={`func (h *Handler) GetOrder(w http.ResponseWriter, r *http.Request) {
     ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second) // client disconnects → r.Context() cancelled
     defer cancel()                       // always call it, even after a timeout: detaches from the parent, stops the timer
 
@@ -166,7 +187,23 @@ func worker(ctx context.Context, jobs <-chan Job) {
             process(ctx, j)
         }
     }
-}`}</Code>
+}`} js={`// AbortSignal plays the role of context.Context
+app.get("/orders/:id", async (req, res) => {
+  const ac = new AbortController();
+  req.on("close", () => ac.abort()); // client disconnected
+  const signal = AbortSignal.any([ac.signal, AbortSignal.timeout(2000)]);
+
+  const order = await repo.find(req.params.id, { signal }); // driver must honor the signal
+  ...
+});
+
+// Background worker: takes a signal, exits when it is aborted
+async function worker(signal, jobs /* AsyncIterable<Job> */) {
+  for await (const j of jobs) {
+    if (signal.aborted) return;
+    await process(signal, j);
+  }
+}`} />
           <ul className="plain">
             <li><b>Context leaks:</b> forgetting <code>cancel</code> keeps the child (and its timer) in the parent&apos;s tree until the parent is cancelled; under a root context that lives forever, that is a real leak. <code>go vet</code> checks for lostcancel.</li>
             <li>Do not store a context in a struct; pass it as the first parameter. <code>context.Value</code> is for request-scoped data only (trace ID, user), not business parameters.</li>

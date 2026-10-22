@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Code } from "@/components/Code";
+import { CodeCompare } from "@/components/CodeCompare";
 import { findPage } from "@/lib/notebook";
 
 // Short answers to the most common senior Go questions: [question, answer, page]
@@ -92,7 +92,7 @@ export default function GoInterviewPage() {
             <div><h4>Unit tests + mocks</h4>Mock small interfaces at the service layer (gomock, testify/mock, or hand-written fakes). Fast, run on every save. Easy to over-mock: tests pass while the real SQL is wrong.</div>
             <div><h4>Integration + Testcontainers</h4>Start real Postgres, Redis, Kafka in Docker from the test. Catches SQL, migration, transaction and locking bugs. Slower; run in CI.</div>
           </div>
-          <Code lang="go">{`// Table-driven test + parallel subtests
+          <CodeCompare go={`// Table-driven test + parallel subtests
 func TestCalcFee(t *testing.T) {
     cases := []struct{ name string; amount, want int64 }{
         {"zero", 0, 0},
@@ -107,7 +107,22 @@ func TestCalcFee(t *testing.T) {
         })
     }
 }
-// go test -race -cover ./...   ·   testing/synctest (1.25) for code with time and goroutines`}</Code>
+// go test -race -cover ./...   ·   testing/synctest (1.25) for code with time and goroutines`} js={`import test from "node:test";
+import assert from "node:assert/strict";
+
+// Table-driven test + subtests run concurrently
+test("calcFee", async (t) => {
+  const cases = [
+    { name: "zero", amount: 0, want: 0 },
+    { name: "normal", amount: 10_000, want: 150 },
+  ];
+  for (const c of cases) {
+    await t.test(c.name, { concurrency: true }, () => {
+      assert.equal(calcFee(c.amount), c.want);
+    });
+  }
+});
+// node --test --experimental-test-coverage   ·   mock.timers to test code that uses time`} />
         </section>
 
         <section id="gi-legacy">

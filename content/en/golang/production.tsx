@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Code } from "@/components/Code";
+import { CodeCompare } from "@/components/CodeCompare";
 import { Box, Label, Markers } from "@/components/Svg";
 
 const WORKERS = [30, 90, 150];
@@ -55,7 +55,7 @@ export default function GoProductionPage() {
               </svg>
             </div>
           </figure>
-          <Code lang="go">{`func Run(ctx context.Context, jobs <-chan Job, workers int) error {
+          <CodeCompare go={`func Run(ctx context.Context, jobs <-chan Job, workers int) error {
     g, ctx := errgroup.WithContext(ctx) // golang.org/x/sync/errgroup
     g.SetLimit(workers)                  // at most N goroutines at a time
     for {
@@ -67,7 +67,22 @@ export default function GoProductionPage() {
             g.Go(func() error { return handle(ctx, j) }) // Go blocks once N are running
         }
     }
-}`}</Code>
+}`} js={`// p-limit: at most N jobs at once, first failure aborts the rest
+import pLimit from "p-limit";
+
+async function run(signal, jobs /* AsyncIterable<Job> */, workers) {
+  const limit = pLimit(workers);
+  const ac = new AbortController();
+  const all = AbortSignal.any([signal, ac.signal]);
+  const tasks = [];
+  let firstErr;
+  for await (const j of jobs) {
+    if (all.aborted) break;
+    tasks.push(limit(() => handle(all, j)).catch((e) => { firstErr ??= e; ac.abort(); }));
+  }
+  await Promise.all(tasks);
+  if (firstErr) throw firstErr;
+}`} />
           <ul className="plain">
             <li><b>Don&apos;t</b> <code>go handle(j)</code> per job: a million jobs means a million goroutines opening DB connections at once.</li>
             <li>Size workers to the bottleneck: CPU-bound work ≈ GOMAXPROCS; I/O-bound work by the limit of the DB/API behind it, then measure and tune.</li>
@@ -77,7 +92,7 @@ export default function GoProductionPage() {
 
         <section id="gp-db">
           <h2><span className="n">02</span>The database/sql connection pool</h2>
-          <Code lang="go">{`db, _ := sql.Open("pgx", dsn)       // sql.DB is a pool: create once, share across the app
+          <CodeCompare go={`db, _ := sql.Open("pgx", dsn)       // sql.DB is a pool: create once, share across the app
 db.SetMaxOpenConns(25)              // default 0 = unlimited
 db.SetMaxIdleConns(25)              // default 2
 db.SetConnMaxLifetime(30 * time.Minute)
@@ -85,7 +100,21 @@ db.SetConnMaxIdleTime(5 * time.Minute)
 
 rows, err := db.QueryContext(ctx, q)
 if err != nil { return err }
-defer rows.Close()                  // forget Close → the connection never returns to the pool`}</Code>
+defer rows.Close()                  // forget Close → the connection never returns to the pool`} js={`import pg from "pg";
+
+const pool = new pg.Pool({          // created once, shared by the whole app
+  connectionString: dsn,
+  max: 25,                          // default 10
+  idleTimeoutMillis: 5 * 60_000,
+  maxLifetimeSeconds: 30 * 60,
+});
+
+const client = await pool.connect();
+try {
+  const { rows } = await client.query(q);
+} finally {
+  client.release();                 // forgetting release: the connection never returns to the pool
+}`} />
           <div className="tbl">
             <table>
               <thead><tr><th>Misconfiguration</th><th>Consequence</th></tr></thead>
@@ -103,7 +132,7 @@ defer rows.Close()                  // forget Close → the connection never ret
         <section id="gp-sf">
           <h2><span className="n">03</span>Cache stampede and singleflight</h2>
           <p>A hot key expires and 1,000 requests all see a cache miss and all query the DB (thundering herd). <code>singleflight</code> merges in-flight calls for the same key: only one real call runs, the others wait and share its result.</p>
-          <Code lang="go">{`var group singleflight.Group // golang.org/x/sync/singleflight
+          <CodeCompare go={`var group singleflight.Group // golang.org/x/sync/singleflight
 
 func (s *Service) Product(ctx context.Context, id string) (*Product, error) {
     if p, ok := s.cache.Get(id); ok {
@@ -116,7 +145,26 @@ func (s *Service) Product(ctx context.Context, id string) (*Product, error) {
     })
     if err != nil { return nil, err }
     return v.(*Product), nil
-}`}</Code>
+}`} js={`const inflight = new Map(); // key -> Promise, the singleflight group
+
+async function product(id) {
+  const hit = cache.get(id);
+  if (hit) return hit;
+
+  const key = "product:" + id;
+  if (!inflight.has(key)) {
+    inflight.set(key, (async () => {
+      try {
+        const p = await repo.find(id);
+        cache.set(id, p, 5 * 60_000 + jitter());
+        return p;
+      } finally {
+        inflight.delete(key);
+      }
+    })());
+  }
+  return inflight.get(key);
+}`} />
           <ul className="plain">
             <li>singleflight only merges within <b>one process</b>. With many instances add a short Redis lock, or refresh the cache before it expires.</li>
             <li>Add random jitter to TTLs so keys do not expire together.</li>
@@ -126,9 +174,15 @@ func (s *Service) Product(ctx context.Context, id string) (*Product, error) {
 
         <section id="gp-pprof">
           <h2><span className="n">04</span>pprof and the execution tracer</h2>
-          <Code lang="go">{`import _ "net/http/pprof" // registers /debug/pprof/* on DefaultServeMux
+          <CodeCompare go={`import _ "net/http/pprof" // registers /debug/pprof/* on DefaultServeMux
 
-go func() { log.Println(http.ListenAndServe("localhost:6060", nil)) }() // internal only`}</Code>
+go func() { log.Println(http.ListenAndServe("localhost:6060", nil)) }() // internal only`} js={`import inspector from "node:inspector";
+
+// Built-in profiler: attach DevTools to this port (internal only)
+inspector.open(9229, "127.0.0.1");
+
+// Or profile from the command line
+// node --cpu-prof --heap-prof app.js`} />
           <div className="tbl">
             <table>
               <thead><tr><th>Profile</th><th>Answers</th><th>Command</th></tr></thead>
