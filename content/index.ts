@@ -6,6 +6,10 @@ import dbMysql from "./db/mysql";
 import dbPostgresql from "./db/postgresql";
 import deployCicdEc2 from "./deploy/cicd-ec2";
 import deployDocker from "./deploy/docker";
+import jsAsync from "./js/async";
+import jsCore from "./js/core";
+import jsToolbox from "./js/toolbox";
+import jsTypescript from "./js/typescript";
 import fe from "./fe";
 import git from "./git";
 import gitMergeRebase from "./git/merge-rebase";
@@ -84,6 +88,10 @@ export const PAGES: Record<string, ComponentType> = {
   "db/postgresql": dbPostgresql,
   "deploy/cicd-ec2": deployCicdEc2,
   "deploy/docker": deployDocker,
+  "js/async": jsAsync,
+  "js/core": jsCore,
+  "js/toolbox": jsToolbox,
+  "js/typescript": jsTypescript,
   "fe": fe,
   "git": git,
   "git/merge-rebase": gitMergeRebase,

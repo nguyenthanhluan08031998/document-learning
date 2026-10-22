@@ -9,7 +9,7 @@ export default function HomePage() {
         <header className="hero">
           <div className="eyebrow">sổ tay lập trình · tổng quan</div>
           <h1>Sổ tay lập trình</h1>
-          <p className="lede">Ghi chú học chia theo sáu mảng: Frontend, Backend, Database, CI/CD, Git và AI. Mọi ví dụ đều xoay quanh một hệ thống <b>bán hàng và thanh toán</b> online như hình dưới.</p>
+          <p className="lede">Ghi chú học chia theo bảy mảng: Frontend, Backend, Database, CI/CD, Git, AI và Ngôn ngữ lập trình. Mọi ví dụ đều xoay quanh một hệ thống <b>bán hàng và thanh toán</b> online như hình dưới.</p>
         </header>
         <section>
           <h2>Hệ thống ví dụ: sàn thương mại điện tử</h2>

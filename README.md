@@ -31,7 +31,7 @@ npm start            # xem thử bản build
 ```
 app/
   layout.tsx                 # khung trang, header, font
-  page.tsx                   # trang chủ: thẻ 6 mảng FE, BE, Database, CI/CD, Git, AI  (/)
+  page.tsx                   # trang chủ: thẻ 7 mảng FE, BE, Database, CI/CD, Git, AI, Language  (/)
   [group]/page.tsx           # trang một mảng   (/be/, /git/, ...)
   en/                        # cùng các route cho tiếng Anh dưới /en/
   [group]/[slug]/page.tsx    # mọi trang con     (/api/rest/, /messaging/kafka/, ...)

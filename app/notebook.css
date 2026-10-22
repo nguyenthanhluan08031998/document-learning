@@ -207,6 +207,10 @@ pre.code code{background:none;padding:0;font-size:inherit}
 .dot.deploy{background:var(--deploy)}
 .dot.ai{background:var(--new)}
 .dot.go{background:var(--deploy)}
+.dot.js{background:var(--warn)}
+.subnav[data-group="js"]{--grp:var(--warn)}
+.g-js .g-tag{background:var(--warn-soft);color:var(--warn)}
+.g-js .g-item:hover{border-color:var(--warn)}
 .subnav[data-group="go"]{--grp:var(--deploy)}
 .g-go .g-tag{background:var(--deploy-soft);color:var(--deploy)}
 .g-go .g-item:hover{border-color:var(--deploy)}

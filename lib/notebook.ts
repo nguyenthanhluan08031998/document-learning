@@ -2,7 +2,7 @@
 
 export type Locale = "vi" | "en";
 
-export type AreaId = "fe" | "be" | "database" | "cicd" | "git" | "ai";
+export type AreaId = "fe" | "be" | "database" | "cicd" | "git" | "ai" | "lang";
 
 export interface Area {
   id: AreaId;
@@ -19,9 +19,10 @@ export const AREAS: Area[] = [
   { id: "cicd", label: "CI/CD", hint: "Build, deploy", hintEn: "Build, deploy" },
   { id: "git", label: "Git", hint: "Quản lý mã nguồn", hintEn: "Source control" },
   { id: "ai", label: "AI", hint: "LLM, RAG, agent", hintEn: "LLM, RAG, agents" },
+  { id: "lang", label: "Language", hint: "Ngôn ngữ lập trình", hintEn: "Programming languages" },
 ];
 
-export type GroupId = "api" | "messaging" | "design" | "concurrency" | "operations" | "deploy" | "git" | "db" | "ai" | "golang";
+export type GroupId = "api" | "messaging" | "design" | "concurrency" | "operations" | "deploy" | "git" | "db" | "ai" | "golang" | "js";
 
 export interface NotebookPage {
   slug: string;
@@ -39,11 +40,20 @@ export interface NotebookGroup {
   labelEn: string;
   hintEn: string;
   /** CSS class suffix used for the coloured dot and active tab */
-  tone: "api" | "msg" | "design" | "conc" | "ops" | "deploy" | "git" | "db" | "ai" | "go";
+  tone: "api" | "msg" | "design" | "conc" | "ops" | "deploy" | "git" | "db" | "ai" | "go" | "js";
   pages: NotebookPage[];
 }
 
 export const GROUPS: NotebookGroup[] = [
+  {
+    id: "js", area: "lang", label: "JS / TS", hint: "javascript, typescript", labelEn: "JS / TS", hintEn: "javascript, typescript", tone: "js",
+    pages: [
+      { slug: "core", label: "JS cốt lõi", labelEn: "Core JS" },
+      { slug: "async", label: "Bất đồng bộ", labelEn: "Async" },
+      { slug: "toolbox", label: "Công cụ hằng ngày", labelEn: "Everyday toolbox" },
+      { slug: "typescript", label: "TypeScript" },
+    ],
+  },
   {
     id: "api", area: "be", label: "API", hint: "đồng bộ", labelEn: "API", hintEn: "synchronous", tone: "api",
     pages: [
@@ -94,7 +104,7 @@ export const GROUPS: NotebookGroup[] = [
     ],
   },
   {
-    id: "golang", area: "be", label: "Go", hint: "golang", labelEn: "Go", hintEn: "golang", tone: "go",
+    id: "golang", area: "lang", label: "Go", hint: "golang", labelEn: "Go", hintEn: "golang", tone: "go",
     pages: [
       { slug: "versions", label: "Phiên bản", labelEn: "Versions" },
       { slug: "vs-nodejs", label: "Go vs Node.js" },
