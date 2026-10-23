@@ -81,6 +81,8 @@ export const GROUPS: NotebookGroup[] = [
       { slug: "structural", label: "Structural" },
       { slug: "behavioral", label: "Behavioral" },
       { slug: "microservice", label: "Microservice" },
+      { slug: "sso", label: "SSO & Microservice" },
+      { slug: "edge", label: "Proxy, Gateway, LB" },
       { slug: "clean-architecture", label: "Clean Architecture" },
       { slug: "cheat-sheet", label: "Tra nhanh", labelEn: "Cheat sheet", aside: true },
     ],

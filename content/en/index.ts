@@ -39,6 +39,8 @@ import designMicroservice from "./design/microservice";
 import designOop from "./design/oop";
 import designPrinciples from "./design/principles";
 import designStructural from "./design/structural";
+import designEdge from "./design/edge";
+import designSso from "./design/sso";
 import be from "./be";
 import messagingCompare from "./messaging/compare";
 import messagingKafka from "./messaging/kafka";
@@ -76,6 +78,8 @@ export const PAGES: Record<string, ComponentType> = {
   "design/oop": designOop,
   "design/principles": designPrinciples,
   "design/structural": designStructural,
+  "design/edge": designEdge,
+  "design/sso": designSso,
   "be": be,
   "messaging/compare": messagingCompare,
   "messaging/kafka": messagingKafka,
