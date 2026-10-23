@@ -109,6 +109,10 @@ export const GROUPS: NotebookGroup[] = [
     id: "golang", area: "lang", label: "Go", hint: "golang", labelEn: "Go", hintEn: "golang", tone: "go",
     pages: [
       { slug: "versions", label: "Phiên bản", labelEn: "Versions" },
+      { slug: "basics", label: "Cơ bản", labelEn: "Basics" },
+      { slug: "errors", label: "Lỗi & Interface", labelEn: "Errors & Interfaces" },
+      { slug: "sync-patterns", label: "Concurrency thực hành", labelEn: "Concurrency in practice" },
+      { slug: "http-db", label: "HTTP & Database", labelEn: "HTTP & Database" },
       { slug: "vs-nodejs", label: "Go vs Node.js" },
       { slug: "runtime", label: "Runtime & GMP" },
       { slug: "concurrency", label: "Channel & Context" },

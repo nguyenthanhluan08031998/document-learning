@@ -30,7 +30,7 @@ export default function GoRuntimePage() {
         <header className="hero">
           <div className="eyebrow">go · runtime</div>
           <h1>Goroutines and the GMP scheduler</h1>
-          <p className="lede">Go runs hundreds of thousands of goroutines on a handful of OS threads thanks to an M:N scheduler in the runtime. Knowing G, M and P explains why goroutines are cheap, why a blocking syscall does not freeze the program, and why GOMAXPROCS matters.</p>
+          <p className="lede">Go runs hundreds of thousands of goroutines on a handful of OS (Operating System) threads thanks to an M:N scheduler in the runtime. Knowing G, M and P explains why goroutines are cheap, why a blocking syscall does not freeze the program, and why GOMAXPROCS matters.</p>
           <div className="tape" aria-hidden="true">
             <div>G · goroutine</div>
             <div>M · OS thread</div>
@@ -93,7 +93,7 @@ export default function GoRuntimePage() {
           <h2><span className="n">03</span>Which goroutine a P runs next</h2>
           <ol className="steps">
             <li><div><b>Every 61 ticks, check the global queue first</b><div className="d">So goroutines in the global queue are not starved.</div></div></li>
-            <li><div><b>runnext, then the local run queue</b><div className="d">A G just created or just woken sits in runnext and runs right away, while the CPU cache is still warm.</div></div></li>
+            <li><div><b>runnext, then the local run queue</b><div className="d">A G just created or just woken sits in runnext and runs right away, while the CPU (Central Processing Unit) cache is still warm.</div></div></li>
             <li><div><b>Global run queue</b><div className="d">Grab a batch into the local queue.</div></div></li>
             <li><div><b>Netpoller</b><div className="d">Pick up Gs whose sockets are ready to read or write.</div></div></li>
             <li><div><b>Work stealing</b><div className="d">Pick another P at random and take half its queue. If there is nothing to do, the M sleeps and the P goes back to the idle list.</div></div></li>
@@ -125,7 +125,7 @@ export default function GoRuntimePage() {
                 <Label x={336} y={222}>→ moves P0 to M1, no CPU wasted</Label>
 
                 <rect className="s-bg2" x="656" y="8" width="236" height="230" rx="10" />
-                <text className="s-lane2" x="670" y="30">NETWORK I/O</text>
+                <text className="s-lane2" x="670" y="30">NETWORK I/O (Input/Output)</text>
                 <Box x={690} y={50} w={170} h={50} title="Netpoller" sub="epoll · kqueue · IOCP" cls="s-disk" />
                 <G x={740} y={150} />
                 <Label x={760} y={154}>G3 waits on socket</Label>
@@ -142,7 +142,7 @@ export default function GoRuntimePage() {
         <section id="gr-preempt">
           <h2><span className="n">05</span>Preemption</h2>
           <ul className="plain">
-            <li><b>Before 1.14 (cooperative):</b> a goroutine only yielded at function calls or when blocking on a channel, lock or I/O. A <code>for {"{}"}</code> loop without calls held its P forever, and since the GC waited for it, the whole program stalled.</li>
+            <li><b>Before 1.14 (cooperative):</b> a goroutine only yielded at function calls or when blocking on a channel, lock or I/O. A <code>for {"{}"}</code> loop without calls held its P forever, and since the GC (Garbage Collector) waited for it, the whole program stalled.</li>
             <li><b>Since 1.14 (asynchronous):</b> when sysmon sees a G running continuously for over 10 ms it sends a signal (SIGURG) to the M; the handler saves state and puts the G back in a queue.</li>
             <li><code>runtime.Gosched()</code> yields explicitly; ordinary code rarely needs it.</li>
           </ul>

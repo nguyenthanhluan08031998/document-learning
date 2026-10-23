@@ -32,7 +32,7 @@ export default function JsAsyncPage() {
           <ul className="plain">
             <li><b>Call stack:</b> code đồng bộ đang chạy.</li>
             <li><b>Microtask queue:</b> callback của <code>Promise.then</code>, <code>await</code>, <code>queueMicrotask</code>. Ưu tiên cao.</li>
-            <li><b>Task (macrotask) queue:</b> <code>setTimeout</code>, <code>setInterval</code>, I/O, sự kiện UI.</li>
+            <li><b>Task (macrotask) queue:</b> <code>setTimeout</code>, <code>setInterval</code>, I/O (Input/Output), sự kiện UI (User Interface).</li>
           </ul>
           <p>Thứ tự: chạy hết stack, rồi chạy <b>toàn bộ</b> microtask, rồi lấy <b>một</b> task, rồi lặp lại.</p>
           <Code lang="js">{`console.log("1 sync");
@@ -49,9 +49,9 @@ console.log("2 sync");
           <Code lang="js">{`const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 fetch("/api/user")
-  .then((res) => res.json())          // each then returns a new promise
+  .then((res) => res.json())          // mỗi then trả về một promise mới
   .then((user) => console.log(user))
-  .catch((err) => console.error(err)) // catches any rejection above
+  .catch((err) => console.error(err)) // bắt mọi lỗi phía trên
   .finally(() => console.log("done"));`}</Code>
           <p>Chạy nhiều promise cùng lúc:</p>
           <div className="tbl">
@@ -67,7 +67,7 @@ fetch("/api/user")
               </tbody>
             </table>
           </div>
-          <Code lang="js">{`// Timeout via race
+          <Code lang="js">{`// Timeout bằng race
 const withTimeout = (p, ms) =>
   Promise.race([p, wait(ms).then(() => { throw new Error("timeout"); })]);`}</Code>
         </section>
@@ -78,15 +78,15 @@ const withTimeout = (p, ms) =>
           <Code lang="js">{`async function getUser(id) {
   try {
     const res = await fetch("/api/users/" + id);
-    if (!res.ok) throw new Error("HTTP " + res.status); // fetch does not reject on 404/500
+    if (!res.ok) throw new Error("HTTP " + res.status); // fetch không reject khi gặp 404/500
     return await res.json();
   } catch (err) {
     console.error("getUser failed", err);
-    throw err;                                          // let the caller decide
+    throw err;                                          // để nơi gọi tự quyết định
   }
 }
 
-// Independent calls: run in parallel, not one after another
+// Các lời gọi độc lập: chạy song song, không chạy lần lượt
 const [user, orders] = await Promise.all([getUser(1), getOrders(1)]);`}</Code>
           <p>Bên dưới, mỗi <code>await</code> là một điểm mà phần code phía sau được đặt vào microtask queue để chạy tiếp khi Promise xong.</p>
         </section>
@@ -97,15 +97,15 @@ const [user, orders] = await Promise.all([getUser(1), getOrders(1)]);`}</Code>
             <div className="warnc"><span className="pl">Chậm không cần thiết</span><code>await</code> tuần tự trong vòng lặp cho các việc độc lập. Tổng thời gian bằng tổng từng việc.</div>
             <div><span className="pl">Cách sửa</span>Tạo mảng promise rồi <code>Promise.all</code>. Cần giới hạn số lượng đồng thời thì chia batch.</div>
           </div>
-          <Code lang="js">{`// Slow: requests one by one
+          <Code lang="js">{`// Chậm: gọi từng request một
 for (const id of ids) results.push(await getUser(id));
 
-// Fast: all at once
+// Nhanh: gọi tất cả cùng lúc
 const results2 = await Promise.all(ids.map(getUser));
 
-// forEach does NOT wait for async callbacks
-ids.forEach(async (id) => { await save(id); }); // returns before saves finish
-for (const id of ids) await save(id);           // waits, in order`}</Code>
+// forEach KHÔNG chờ callback async
+ids.forEach(async (id) => { await save(id); }); // kết thúc trước khi các lệnh save xong
+for (const id of ids) await save(id);           // chờ xong từng cái, theo thứ tự`}</Code>
           <ul className="plain">
             <li><b>Quên <code>await</code>:</b> nhận về Promise thay vì giá trị, và lỗi bị nuốt thành <i>unhandled rejection</i>.</li>
             <li><b>Nuốt lỗi trong <code>catch</code>:</b> không <code>throw</code> lại thì caller tưởng đã thành công.</li>

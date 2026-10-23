@@ -78,7 +78,7 @@ users.map((u) => u.id).filter(Boolean);          // chain them`}</Code>
           <h2><span className="n">03</span>Debounce and throttle</h2>
           <p>Events such as typing, scroll and resize fire very densely. These two techniques limit how often your function really runs.</p>
           <div className="pp">
-            <div><span className="pl">Debounce</span>Waits until calls stop for a while, then runs <b>once</b>. Good for search boxes: call the API only after the user stops typing.</div>
+            <div><span className="pl">Debounce</span>Waits until calls stop for a while, then runs <b>once</b>. Good for search boxes: call the API (Application Programming Interface) only after the user stops typing.</div>
             <div><span className="pl">Throttle</span>Runs at most <b>once per interval</b>, however often it is called. Good for scroll, resize and drag.</div>
           </div>
           <Code lang="js">{`function debounce(fn, delay) {

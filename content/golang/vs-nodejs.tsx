@@ -113,7 +113,7 @@ if err != nil {
     return fmt.Errorf("parse: %w", err) // wrap it; the caller decides what to do
 }
 // panic/recover exists, but it is for bugs, not for control flow`} js={`try {
-  JSON.parse("abc");                // throws SyntaxError
+  JSON (JavaScript Object Notation).parse("abc");                // throws SyntaxError
   const v = parseInt("abc");        // NaN, does not throw
 } catch (err) {
   throw new Error("parse failed", { cause: err }); // wrap with cause
@@ -134,13 +134,13 @@ const x = 1;         // unused is fine (linters warn)`} />
 
         <section id="gn-conc">
           <h2><span className="n">06</span>Đồng thời</h2>
-          <p>Node.js chạy JS trên một thread với event loop và <code>async/await</code>. Go chạy goroutine song song thật trên nhiều core, không cần <code>await</code>; xem thêm <Link className="plink" href="/golang/runtime/">Runtime &amp; GMP</Link>.</p>
+          <p>Node.js chạy JS trên một thread với event loop và <code>async/await</code>. Go chạy goroutine song song thật trên nhiều core, không cần <code>await</code>; xem thêm <Link className="plink" href="/golang/runtime/">Runtime &amp; GMP (Goroutine-Machine-Processor)</Link>.</p>
           <CodeCompare go={`var wg sync.WaitGroup
 for _, u := range urls {
     wg.Go(func() { fetch(u) }) // goroutines run in parallel on many cores
 }
-wg.Wait()`} js={`await Promise.all(urls.map((u) => fetch(u))); // concurrent I/O on one thread
-// CPU-bound work blocks the event loop: move it to worker_threads`} />
+wg.Wait()`} js={`await Promise.all(urls.map((u) => fetch(u))); // concurrent I/O (Input/Output) on one thread
+// CPU (Central Processing Unit)-bound work blocks the event loop: move it to worker_threads`} />
         </section>
 
         <section id="gn-sum">
@@ -150,7 +150,7 @@ wg.Wait()`} js={`await Promise.all(urls.map((u) => fetch(u))); // concurrent I/O
               <thead><tr><th></th><th>Go</th><th>Node.js</th></tr></thead>
               <tbody>
                 <tr><td><b>Khai báo</b></td><td>var, :=, const</td><td>var, let, const</td></tr>
-                <tr><td><b>Scope</b></td><td>Block scope, không hoisting cục bộ</td><td>var hoisted; let/const block scope + TDZ</td></tr>
+                <tr><td><b>Scope</b></td><td>Block scope, không hoisting cục bộ</td><td>var hoisted; let/const block scope + TDZ (Temporal Dead Zone)</td></tr>
                 <tr><td><b>Kiểu</b></td><td>Tĩnh, không tự ép kiểu</td><td>Động, ép kiểu ngầm</td></tr>
                 <tr><td><b>Lỗi</b></td><td>Giá trị error trả về</td><td>throw / try-catch</td></tr>
                 <tr><td><b>Giá trị rỗng</b></td><td>Zero value, nil</td><td>undefined, null</td></tr>

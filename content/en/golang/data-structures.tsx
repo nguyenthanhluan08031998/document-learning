@@ -137,7 +137,7 @@ node --test`} />
             <div><h4>iface · interface with methods</h4>Two words: <code>tab *itab</code> and <code>data</code>. The itab holds the interface type, the dynamic type and a table of function pointers <code>fun[]</code>; it is computed once and cached.</div>
           </div>
           <p><b>Interface satisfaction</b> is implicit: a type with all the methods satisfies the interface, no <code>implements</code> needed. Check at compile time with <code>var _ Repo = (*PgRepo)(nil)</code>.</p>
-          <p><b>Cost of calling through an interface:</b> one indirect call via the itab, no inlining (unless PGO devirtualises it), and assigning a value to an interface often makes it escape to the heap. It matters in hot loops; it does not matter at the service/repository layer.</p>
+          <p><b>Cost of calling through an interface:</b> one indirect call via the itab, no inlining (unless PGO (Profile-Guided Optimization) devirtualises it), and assigning a value to an interface often makes it escape to the heap. It matters in hot loops; it does not matter at the service/repository layer.</p>
           <CodeCompare go={`// The nil interface trap: an interface is nil only when both _type and data are nil
 func find() error {
     var err *NotFoundError = nil

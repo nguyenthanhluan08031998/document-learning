@@ -137,7 +137,7 @@ node --test`} />
             <div><h4>iface · interface có method</h4>Hai word: <code>tab *itab</code> và <code>data</code>. itab chứa kiểu interface, kiểu động và bảng con trỏ hàm <code>fun[]</code>; được tính một lần rồi cache.</div>
           </div>
           <p><b>Interface satisfaction</b> là ngầm định: kiểu có đủ method thì thoả, không cần khai báo <code>implements</code>. Kiểm tra lúc biên dịch bằng <code>var _ Repo = (*PgRepo)(nil)</code>.</p>
-          <p><b>Chi phí gọi qua interface:</b> một lần gọi gián tiếp qua itab, compiler không inline được (trừ khi PGO devirtualize), và gán giá trị vào interface thường làm nó escape lên heap. Đáng kể trong vòng lặp nóng; không đáng kể ở tầng service/repository.</p>
+          <p><b>Chi phí gọi qua interface:</b> một lần gọi gián tiếp qua itab, compiler không inline được (trừ khi PGO (Profile-Guided Optimization) devirtualize), và gán giá trị vào interface thường làm nó escape lên heap. Đáng kể trong vòng lặp nóng; không đáng kể ở tầng service/repository.</p>
           <CodeCompare go={`// Bẫy nil interface: interface chỉ nil khi cả _type và data đều nil
 func find() error {
     var err *NotFoundError = nil

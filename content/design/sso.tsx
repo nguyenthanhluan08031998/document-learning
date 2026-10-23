@@ -47,16 +47,16 @@ export default function DesignSsoPage() {
 
         <section id="sso-what">
           <h2><span className="n">01</span>SSO là gì</h2>
-          <p><b>Single Sign-On</b>: đăng nhập một lần ở IdP, dùng được cho mọi ứng dụng tin tưởng IdP đó. Trong microservice, mỗi service tự làm đăng nhập sẽ lặp code, lệch chính sách và khó đổi (thêm MFA, social login). Gom về một IdP giải quyết cả ba.</p>
+          <p><b>Single Sign-On</b>: đăng nhập một lần ở IdP (Identity Provider), dùng được cho mọi ứng dụng tin tưởng IdP đó. Trong microservice, mỗi service tự làm đăng nhập sẽ lặp code, lệch chính sách và khó đổi (thêm MFA (Multi-Factor Authentication), social login). Gom về một IdP giải quyết cả ba.</p>
           <div className="tbl">
             <table>
               <thead>
                 <tr><th>Chuẩn</th><th>Làm gì</th><th>Ghi chú</th></tr>
               </thead>
               <tbody>
-                <tr><td><b>OAuth 2.0</b></td><td>Ủy quyền: cấp <i>access token</i> để gọi API</td><td>Không nói người dùng là ai</td></tr>
+                <tr><td><b>OAuth 2.0</b></td><td>Ủy quyền: cấp <i>access token</i> để gọi API (Application Programming Interface)</td><td>Không nói người dùng là ai</td></tr>
                 <tr><td><b>OpenID Connect (OIDC)</b></td><td>Xác thực, xây trên OAuth 2.0: thêm <i>ID token</i> chứa danh tính</td><td>Lựa chọn mặc định hiện nay</td></tr>
-                <tr><td><b>SAML 2.0</b></td><td>SSO bằng XML, hay gặp ở hệ thống doanh nghiệp cũ</td><td>Dùng khi đối tác bắt buộc</td></tr>
+                <tr><td><b>SAML (Security Assertion Markup Language) 2.0</b></td><td>SSO (Single Sign-On) bằng XML (Extensible Markup Language), hay gặp ở hệ thống doanh nghiệp cũ</td><td>Dùng khi đối tác bắt buộc</td></tr>
               </tbody>
             </table>
           </div>
@@ -65,7 +65,7 @@ export default function DesignSsoPage() {
 
         <section id="sso-flow">
           <h2><span className="n">02</span>Luồng đăng nhập: Authorization Code + PKCE</h2>
-          <p>Đây là luồng nên dùng cho web, SPA và mobile. <b>PKCE</b> (code verifier và code challenge) chặn việc kẻ gian chặn được <code>code</code> rồi đem đổi lấy token.</p>
+          <p>Đây là luồng nên dùng cho web, SPA và mobile. <b>PKCE (Proof Key for Code Exchange)</b> (code verifier và code challenge) chặn việc kẻ gian chặn được <code>code</code> rồi đem đổi lấy token.</p>
           <figure className="fig">
             <div className="scroll">
               <svg viewBox="0 0 900 350" role="img" aria-label="Luồng OIDC: trình duyệt gửi yêu cầu authorize tới IdP, đăng nhập, nhận code, đổi code lấy token, rồi gọi API Gateway kèm Bearer token; gateway kiểm tra chữ ký bằng JWKS của IdP rồi chuyển tiếp tới service">
@@ -86,8 +86,8 @@ export default function DesignSsoPage() {
             </div>
             <figcaption>Bước 1 đến 4 là đăng nhập một lần ở IdP. Từ bước 5, mỗi request chỉ mang token; gateway kiểm tra chữ ký bằng khóa công khai (JWKS) đã cache, không gọi IdP cho từng request.</figcaption>
           </figure>
-          <Code lang="ts">{`// 1. Build the authorize URL (PKCE)
-const verifier = randomString(64);                       // kept in memory/session
+          <Code lang="ts">{`// 1. Tạo URL authorize (PKCE)
+const verifier = randomString(64);                       // giữ trong bộ nhớ/session
 const challenge = base64url(sha256(verifier));
 
 const url = new URL("https://idp.example.com/authorize");
@@ -96,12 +96,12 @@ url.search = new URLSearchParams({
   client_id: "web-app",
   redirect_uri: "https://app.example.com/callback",
   scope: "openid profile email offline_access",
-  state: randomString(16),                               // anti-CSRF, verify on return
+  state: randomString(16),                               // chống CSRF, kiểm tra lại khi quay về
   code_challenge: challenge,
   code_challenge_method: "S256",
 }).toString();
 
-// 3. Exchange the code for tokens (after redirect to /callback?code=...)
+// 3. Đổi code lấy token (sau khi redirect về /callback?code=...)
 const res = await fetch("https://idp.example.com/token", {
   method: "POST",
   headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -128,7 +128,7 @@ const { access_token, id_token, refresh_token } = await res.json();`}</Code>
               </tbody>
             </table>
           </div>
-          <p>JWT gồm ba phần <code>header.payload.signature</code>. Payload chỉ được <b>mã hóa base64, không bí mật</b>; ai cũng đọc được, nên đừng nhét dữ liệu nhạy cảm. Chữ ký mới là thứ chứng minh token do IdP phát.</p>
+          <p>JWT (JSON Web Token) gồm ba phần <code>header.payload.signature</code>. Payload chỉ được <b>mã hóa base64, không bí mật</b>; ai cũng đọc được, nên đừng nhét dữ liệu nhạy cảm. Chữ ký mới là thứ chứng minh token do IdP phát.</p>
           <Code lang="json">{`{
   "iss": "https://idp.example.com/",
   "sub": "user-1842",
@@ -148,16 +148,16 @@ const { access_token, id_token, refresh_token } = await res.json();`}</Code>
           <p>Kiểm tra token là việc nội bộ, không cần gọi IdP: lấy khóa công khai từ <code>/.well-known/jwks.json</code> (cache, tự làm mới khi gặp <code>kid</code> lạ) rồi xác minh chữ ký.</p>
           <Code lang="ts">{`import { createRemoteJWKSet, jwtVerify } from "jose";
 
-const jwks = createRemoteJWKSet(new URL("https://idp.example.com/.well-known/jwks.json")); // cached
+const jwks = createRemoteJWKSet(new URL("https://idp.example.com/.well-known/jwks.json")); // đã cache
 
 export async function authenticate(req, res, next) {
   const token = req.headers.authorization?.replace(/^Bearer /, "");
   if (!token) return res.status(401).end();
   try {
     const { payload } = await jwtVerify(token, jwks, {
-      issuer: "https://idp.example.com/",   // who issued it
-      audience: "orders-api",               // is it meant for THIS service
-    });                                      // also checks signature and exp
+      issuer: "https://idp.example.com/",   // ai đã phát hành
+      audience: "orders-api",               // token có dành cho service NÀY không
+    });                                      // đồng thời kiểm tra chữ ký và exp
     req.user = payload;
     next();
   } catch {
@@ -173,9 +173,9 @@ export async function authenticate(req, res, next) {
             <li><b>Chuyển tiếp token của user:</b> đơn giản, giữ được danh tính người dùng, nhưng token có audience rộng và lộ ra nhiều nơi.</li>
             <li><b>Token exchange (RFC 8693):</b> service đổi token user lấy token mới có <code>aud</code> là service đích, phạm vi nhỏ hơn. Giữ được danh tính mà vẫn giảm rủi ro.</li>
             <li><b>Client credentials:</b> khi không có người dùng (job nền, worker). Service có client id/secret riêng, xin token của chính nó.</li>
-            <li><b>mTLS (service mesh):</b> bên dưới tầng token, xác thực <i>workload</i> bằng chứng chỉ hai chiều (Istio, Linkerd). Chứng minh &quot;ai là service gọi&quot;, còn token chứng minh &quot;thay mặt người dùng nào&quot;.</li>
+            <li><b>mTLS (mutual Transport Layer Security) (service mesh):</b> bên dưới tầng token, xác thực <i>workload</i> bằng chứng chỉ hai chiều (Istio, Linkerd). Chứng minh &quot;ai là service gọi&quot;, còn token chứng minh &quot;thay mặt người dùng nào&quot;.</li>
           </ul>
-          <Code lang="ts">{`// Client credentials: a worker gets its own token (no user involved)
+          <Code lang="ts">{`// Client credentials: worker tự xin token riêng (không có người dùng)
 const res = await fetch("https://idp.example.com/token", {
   method: "POST",
   headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -201,13 +201,13 @@ const res = await fetch("https://idp.example.com/token", {
         <section id="sso-authz">
           <h2><span className="n">07</span>Phân quyền</h2>
           <p>Xác thực trả lời &quot;bạn là ai&quot;, phân quyền trả lời &quot;được làm gì&quot;. Chuẩn nhất là để <b>mỗi service tự quyết định</b> dựa trên claim, vì chỉ service mới hiểu nghiệp vụ của mình.</p>
-          <Code lang="ts">{`// Scope check: coarse permission from the token
+          <Code lang="ts">{`// Kiểm tra scope: quyền thô lấy từ token
 const requireScope = (scope: string) => (req, res, next) =>
   req.user.scope?.split(" ").includes(scope) ? next() : res.status(403).end();
 
 app.get("/orders", authenticate, requireScope("orders:read"), listOrders);
 
-// Ownership check: fine-grained, needs business data, so it lives in the service
+// Kiểm tra quyền sở hữu: chi tiết, cần dữ liệu nghiệp vụ nên nằm trong service
 async function getOrder(req, res) {
   const order = await db.orders.findById(req.params.id);
   if (order.userId !== req.user.sub && !req.user.roles.includes("admin")) {
@@ -224,7 +224,7 @@ async function getOrder(req, res) {
             <li>Dùng Authorization Code + PKCE; không dùng Implicit, Password.</li>
             <li>Access token ngắn hạn, refresh token xoay vòng, lưu an toàn (cookie <code>HttpOnly</code> + <code>Secure</code> + <code>SameSite</code>, không để trong localStorage nếu tránh được).</li>
             <li>Mỗi service tự kiểm tra chữ ký, <code>iss</code>, <code>aud</code>, <code>exp</code>; không tin header user do client gửi.</li>
-            <li>Cache JWKS, xoay khóa ký định kỳ, thuật toán cố định (RS256 hoặc ES256), từ chối <code>alg: none</code>.</li>
+            <li>Cache JWKS (JSON Web Key Set), xoay khóa ký định kỳ, thuật toán cố định (RS256 hoặc ES256), từ chối <code>alg: none</code>.</li>
             <li>Token exchange hoặc client credentials cho gọi giữa service; mTLS ở tầng mạng.</li>
             <li>Kiểm tra <code>state</code> và <code>redirect_uri</code> khớp danh sách đăng ký sẵn.</li>
             <li>Không log token; ghi <code>sub</code> và request id vào log để truy vết.</li>

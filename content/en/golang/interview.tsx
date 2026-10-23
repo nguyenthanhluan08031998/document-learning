@@ -56,7 +56,7 @@ export default function GoInterviewPage() {
                 {QA.map(([q, a, p]) => (
                   <tr key={q}><td><b>{q}</b></td><td>{a}</td><td><Link className="plink" href={`/en/golang/${p}/`}>{label(p)}</Link></td></tr>
                 ))}
-                <tr><td><b>gRPC or REST?</b></td><td>gRPC (HTTP/2 + Protobuf) between internal services: fast, contract-first, streaming. REST + JSON for external clients, browsers, partners.</td><td><Link className="plink" href="/en/api/compare/">API</Link></td></tr>
+                <tr><td><b>gRPC or REST (Representational State Transfer)?</b></td><td>gRPC (HTTP/2 + Protobuf) between internal services: fast, contract-first, streaming. REST + JSON (JavaScript Object Notation) for external clients, browsers, partners.</td><td><Link className="plink" href="/en/api/compare/">API (Application Programming Interface)</Link></td></tr>
               </tbody>
             </table>
           </div>
@@ -66,10 +66,10 @@ export default function GoInterviewPage() {
           <h2><span className="n">02</span>ORM (GORM, Ent) or SQL (sqlx, pgx, sqlc)</h2>
           <div className="tbl">
             <table>
-              <thead><tr><th></th><th>GORM</th><th>Ent</th><th>sqlc / sqlx / pgx</th></tr></thead>
+              <thead><tr><th></th><th>GORM (Object-Relational Mapping)</th><th>Ent</th><th>sqlc / sqlx / pgx</th></tr></thead>
               <tbody>
-                <tr><td><b>Style</b></td><td>Method chains, runtime reflection</td><td>Schema defined in Go, generated typed code</td><td>Real SQL; sqlc generates typed Go functions from .sql files</td></tr>
-                <tr><td><b>Strengths</b></td><td>Fast CRUD, many plugins</td><td>Type safety, graph relations, migrations</td><td>Queries are visible, indexes/CTEs/locks can be tuned, fastest</td></tr>
+                <tr><td><b>Style</b></td><td>Method chains, runtime reflection</td><td>Schema defined in Go, generated typed code</td><td>Real SQL (Structured Query Language); sqlc generates typed Go functions from .sql files</td></tr>
+                <tr><td><b>Strengths</b></td><td>Fast CRUD (Create, Read, Update, Delete), many plugins</td><td>Type safety, graph relations, migrations</td><td>Queries are visible, indexes/CTEs/locks can be tuned, fastest</td></tr>
                 <tr><td><b>Weaknesses</b></td><td>Unpredictable generated queries, N+1, errors found at runtime</td><td>Another DSL to learn, lots of generated code</td><td>More SQL to write; dynamic queries must be assembled by hand</td></tr>
               </tbody>
             </table>
@@ -82,7 +82,7 @@ export default function GoInterviewPage() {
           <ul className="plain">
             <li><b>net/http</b>: since 1.22 the standard router has methods and path params (<code>GET /users/{"{id}"}</code>), enough for most APIs. No dependencies; middleware is just <code>func(http.Handler) http.Handler</code>.</li>
             <li><b>Gin, Echo, Chi</b>: built on net/http, adding binding, validation and ready-made middleware; Chi stays closest to the standard library.</li>
-            <li><b>Fiber</b>: built on fasthttp, not compatible with <code>http.Handler</code>, so it cannot share standard middleware and tooling (OpenTelemetry, pprof handlers). Fast in benchmarks, but the HTTP layer is rarely the bottleneck.</li>
+            <li><b>Fiber</b>: built on fasthttp, not compatible with <code>http.Handler</code>, so it cannot share standard middleware and tooling (OpenTelemetry, pprof handlers). Fast in benchmarks, but the HTTP (HyperText Transfer Protocol) layer is rarely the bottleneck.</li>
           </ul>
         </section>
 
@@ -90,7 +90,7 @@ export default function GoInterviewPage() {
           <h2><span className="n">04</span>Testing strategy</h2>
           <div className="cmp">
             <div><h4>Unit tests + mocks</h4>Mock small interfaces at the service layer (gomock, testify/mock, or hand-written fakes). Fast, run on every save. Easy to over-mock: tests pass while the real SQL is wrong.</div>
-            <div><h4>Integration + Testcontainers</h4>Start real Postgres, Redis, Kafka in Docker from the test. Catches SQL, migration, transaction and locking bugs. Slower; run in CI.</div>
+            <div><h4>Integration + Testcontainers</h4>Start real Postgres, Redis, Kafka in Docker from the test. Catches SQL, migration, transaction and locking bugs. Slower; run in CI (Continuous Integration).</div>
           </div>
           <CodeCompare go={`// Table-driven test + parallel subtests
 func TestCalcFee(t *testing.T) {

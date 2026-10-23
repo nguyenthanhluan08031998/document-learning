@@ -30,11 +30,11 @@ export default function DesignEdgePage() {
           <div className="tbl">
             <table>
               <thead>
-                <tr><th></th><th>Reverse Proxy</th><th>API Gateway</th><th>Load Balancer</th></tr>
+                <tr><th></th><th>Reverse Proxy</th><th>API (Application Programming Interface) Gateway</th><th>Load Balancer</th></tr>
               </thead>
               <tbody>
                 <tr><td><b>Mục đích</b></td><td>Thay mặt server nhận request</td><td>Một cửa vào cho nhiều service</td><td>Chia request cho nhiều bản sao</td></tr>
-                <tr><td><b>Biết về</b></td><td>HTTP (host, path)</td><td>API (user, key, quota, version)</td><td>Tải và sức khỏe server</td></tr>
+                <tr><td><b>Biết về</b></td><td>HTTP (HyperText Transfer Protocol) (host, path)</td><td>API (user, key, quota, version)</td><td>Tải và sức khỏe server</td></tr>
                 <tr><td><b>Gộp nhiều service</b></td><td>Không</td><td>Có</td><td>Không</td></tr>
               </tbody>
             </table>
@@ -44,21 +44,21 @@ export default function DesignEdgePage() {
         <section id="ed-each">
           <h2><span className="n">02</span>Từng cái làm gì</h2>
           <div className="pp">
-            <div><span className="pl">Reverse Proxy</span>Client chỉ biết địa chỉ proxy, server thật không lộ ra internet. Làm TLS termination, cache, nén, file tĩnh.</div>
-            <div><span className="pl">API Gateway</span>Proxy có hiểu biết về API: xác thực, rate limit, route <code>/orders</code> tới order-svc, gộp kết quả nhiều service. Xem thêm trang SSO &amp; Microservice.</div>
+            <div><span className="pl">Reverse Proxy</span>Client chỉ biết địa chỉ proxy, server thật không lộ ra internet. Làm TLS (Transport Layer Security) termination, cache, nén, file tĩnh.</div>
+            <div><span className="pl">API Gateway</span>Proxy có hiểu biết về API: xác thực, rate limit, route <code>/orders</code> tới order-svc, gộp kết quả nhiều service. Xem thêm trang SSO (Single Sign-On) &amp; Microservice.</div>
             <div><span className="pl">Load Balancer</span>Một địa chỉ công khai, chia cho nhiều bản sao. Health check định kỳ, server hỏng bị loại. L4 (TCP) nhanh; L7 (HTTP) route được theo path.</div>
             <div className="warnc"><span className="pl">Cẩn thận</span>Gateway là điểm đơn lẻ và dễ phình thành &quot;cục to&quot;. Chỉ để việc chung (auth, limit, routing); nghiệp vụ thuộc về service.</div>
           </div>
           <Code lang="nginx">{`upstream app {
-  least_conn;                                  # load balancer: fewest connections first
-  server 10.0.1.11:3000 max_fails=3 fail_timeout=10s;   # dropped after 3 failures
+  least_conn;                                  # load balancer: ưu tiên server ít kết nối nhất
+  server 10.0.1.11:3000 max_fails=3 fail_timeout=10s;   # bị loại sau 3 lần lỗi
   server 10.0.1.12:3000 max_fails=3 fail_timeout=10s;
 }
 
 server {
-  listen 443 ssl;                              # reverse proxy: TLS ends here
+  listen 443 ssl;                              # reverse proxy: TLS kết thúc ở đây
   location / {
-    proxy_pass http://app;                     # real servers stay hidden
+    proxy_pass http://app;                     # server thật được giấu đi
     proxy_set_header X-Forwarded-For $remote_addr;
   }
 }`}</Code>

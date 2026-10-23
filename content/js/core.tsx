@@ -30,13 +30,13 @@ export default function JsCorePage() {
         <section id="jc-scope">
           <h2><span className="n">01</span>Scope</h2>
           <p>Scope quyết định biến nào được truy cập ở đâu. Có ba tầng: <b>global</b> (cả chương trình), <b>function</b> (trong một hàm) và <b>block</b> (trong cặp <code>{"{ }"}</code>, chỉ với <code>let</code>/<code>const</code>). Biến luôn được tìm từ scope trong cùng ra ngoài.</p>
-          <Code lang="js">{`const a = "global";            // global scope
+          <Code lang="js">{`const a = "global";            // scope global
 
 function demo() {
-  const b = "function";        // visible only inside demo()
+  const b = "function";        // chỉ thấy bên trong demo()
   if (true) {
-    const c = "block";         // visible only inside this block
-    var d = "var";             // var ignores block scope and leaks to the function
+    const c = "block";         // chỉ thấy bên trong block này
+    var d = "var";             // var bỏ qua block scope và rò ra cả hàm
   }
   console.log(a, b, d);        // ok
   // console.log(c);           // ReferenceError: c is not defined
@@ -61,7 +61,7 @@ function demo() {
           <h2><span className="n">02</span>Closure</h2>
           <p>Closure là hàm <b>nhớ scope nơi nó được tạo</b>, kể cả khi hàm bên ngoài đã chạy xong. Biến được giữ lại chừng nào còn hàm tham chiếu tới nó.</p>
           <Code lang="js">{`function outer() {
-  let count = 0;               // lives on after outer() returns
+  let count = 0;               // vẫn sống sau khi outer() kết thúc
   return function () {
     count++;
     return count;
@@ -71,10 +71,10 @@ function demo() {
 const counter = outer();
 counter(); // 1
 counter(); // 2
-const other = outer();         // a separate closure with its own count
+const other = outer();         // closure riêng, có count riêng
 other();   // 1`}</Code>
           <p>Dùng để tạo state riêng tư, factory function, giữ ngữ cảnh cho callback và memoization.</p>
-          <Code lang="js">{`// Memoize: cache results of a pure function in a closure
+          <Code lang="js">{`// Memoize: lưu kết quả của hàm thuần trong closure
 function memoize(fn) {
   const cache = new Map();
   return (arg) => {
@@ -102,17 +102,17 @@ for (let j = 0; j < 3; j++) setTimeout(() => console.log(j)); // 0 1 2`}</Code>
                 <tr><td><code>var</code></td><td>Được hoist, giá trị là <code>undefined</code></td></tr>
                 <tr><td><code>let</code> / <code>const</code></td><td>Nằm trong Temporal Dead Zone: truy cập sẽ ném <code>ReferenceError</code></td></tr>
                 <tr><td><code>function foo() {"{}"}</code></td><td>Hoist cả thân hàm, gọi được trước khi khai báo</td></tr>
-                <tr><td><code>const foo = () =&gt; {"{}"}</code></td><td>Là biến <code>const</code>, tức TDZ như trên</td></tr>
+                <tr><td><code>const foo = () =&gt; {"{}"}</code></td><td>Là biến <code>const</code>, tức TDZ (Temporal Dead Zone) như trên</td></tr>
               </tbody>
             </table>
           </div>
-          <Code lang="js">{`console.log(x); // undefined (hoisted, not yet assigned)
+          <Code lang="js">{`console.log(x); // undefined (đã hoist, chưa được gán)
 var x = 5;
 
-console.log(y); // ReferenceError (in the TDZ until this line runs)
+console.log(y); // ReferenceError (đang trong TDZ tới khi dòng này chạy)
 let y = 5;
 
-hello();        // works: function declarations are hoisted whole
+hello();        // chạy được: function declaration được hoist nguyên cả hàm
 function hello() { console.log("hi"); }`}</Code>
         </section>
 
@@ -140,7 +140,7 @@ function hello() { console.log("hi"); }`}</Code>
 user.hi();              // "hi Lan"
 
 const hi = user.hi;
-hi();                   // this is lost: undefined.name throws in strict mode
+hi();                   // mất this: undefined.name gây lỗi trong strict mode
 
 const bound = user.hi.bind(user);
 bound();                // "hi Lan"
@@ -148,7 +148,7 @@ bound();                // "hi Lan"
 class Timer {
   seconds = 0;
   start() {
-    // Arrow keeps this pointing to the Timer instance
+    // Arrow function giữ this trỏ tới instance Timer
     setInterval(() => this.seconds++, 1000);
   }
 }`}</Code>
@@ -159,13 +159,13 @@ class Timer {
           <h2><span className="n">05</span>Prototype</h2>
           <p>Mỗi object có một liên kết ẩn tới object khác gọi là <b>prototype</b>. Khi truy cập thuộc tính không có trên object, engine đi dọc chuỗi prototype cho tới khi gặp hoặc tới <code>null</code>. Đây là cách JS kế thừa.</p>
           <Code lang="js">{`const animal = { eat() { return "eating"; } };
-const dog = Object.create(animal);   // dog's prototype is animal
+const dog = Object.create(animal);   // prototype của dog là animal
 dog.bark = () => "woof";
 
-dog.bark();   // own property
-dog.eat();    // found on the prototype chain: dog → animal → Object.prototype → null
+dog.bark();   // thuộc tính của chính nó
+dog.eat();    // tìm thấy trên chuỗi prototype: dog → animal → Object.prototype → null
 Object.getPrototypeOf(dog) === animal;  // true
-Object.hasOwn(dog, "eat");              // false: eat is inherited`}</Code>
+Object.hasOwn(dog, "eat");              // false: eat là thuộc tính kế thừa`}</Code>
           <p><code>class</code> chỉ là cú pháp gọn trên cơ chế prototype:</p>
           <Code lang="js">{`class Animal {
   eat() { return "eating"; }
@@ -175,7 +175,7 @@ class Dog extends Animal {
 }
 
 const d = new Dog();
-d.eat();                                          // inherited from Animal.prototype
+d.eat();                                          // kế thừa từ Animal.prototype
 Object.getPrototypeOf(d) === Dog.prototype;       // true
 Object.getPrototypeOf(Dog.prototype) === Animal.prototype; // true`}</Code>
           <div className="note tip"><b>Ghi nhớ:</b> method của class nằm trên <code>prototype</code> và dùng chung cho mọi instance, còn field (<code>seconds = 0</code>) nằm trên từng instance.</div>

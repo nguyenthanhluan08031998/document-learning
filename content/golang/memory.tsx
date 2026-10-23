@@ -35,7 +35,7 @@ export default function GoMemoryPage() {
         <header className="hero">
           <div className="eyebrow">go · memory</div>
           <h1>Bộ nhớ, Escape Analysis và GC</h1>
-          <p className="lede">Biến trên stack gần như miễn phí; biến trên heap phải được GC dọn. Phần lớn tối ưu hiệu năng trong Go là bớt cấp phát heap, và hiểu GC để chỉnh GOGC, GOMEMLIMIT đúng chỗ.</p>
+          <p className="lede">Biến trên stack gần như miễn phí; biến trên heap phải được GC (Garbage Collector) dọn. Phần lớn tối ưu hiệu năng trong Go là bớt cấp phát heap, và hiểu GC để chỉnh GOGC, GOMEMLIMIT đúng chỗ.</p>
           <div className="tape" aria-hidden="true">
             <div>-gcflags=-m</div>
             <div>tri-color</div>
@@ -107,8 +107,8 @@ console.log(process.memoryUsage().heapUsed);`} />
           <ul className="plain">
             <li><b>Concurrent:</b> mark chạy song song với code của bạn (mặc định dùng khoảng 25% CPU). Vì chương trình vẫn đổi con trỏ trong lúc mark, compiler chèn <b>write barrier</b> để object đen không bao giờ trỏ tới object trắng mà GC không biết.</li>
             <li><b>Non-generational, non-compacting:</b> không chia thế hệ trẻ/già như Java, không dời object. Bù lại cấp phát theo size class giúp ít phân mảnh.</li>
-            <li><b>GC assist:</b> goroutine cấp phát quá nhanh trong lúc mark bị bắt làm phụ việc mark, nên latency của chính request đó tăng. Đây thường là nguồn gây trễ hơn cả STW.</li>
-            <li><b>Green Tea GC</b> (mặc định từ 1.26): quét theo từng trang bộ nhớ thay vì nhảy theo từng object, tận dụng cache CPU tốt hơn, giảm 10–40% thời gian GC.</li>
+            <li><b>GC assist:</b> goroutine cấp phát quá nhanh trong lúc mark bị bắt làm phụ việc mark, nên latency của chính request đó tăng. Đây thường là nguồn gây trễ hơn cả STW (Stop-The-World).</li>
+            <li><b>Green Tea GC</b> (mặc định từ 1.26): quét theo từng trang bộ nhớ thay vì nhảy theo từng object, tận dụng cache CPU (Central Processing Unit) tốt hơn, giảm 10–40% thời gian GC.</li>
           </ul>
         </section>
 
@@ -137,8 +137,8 @@ console.log(process.memoryUsage().heapUsed);`} />
         <section id="gm-tune">
           <h2><span className="n">04</span>GOGC và GOMEMLIMIT</h2>
           <div className="cmp">
-            <div><h4>GOGC (mặc định 100)</h4>Chạy GC tiếp theo khi heap tăng thêm GOGC% so với heap còn sống sau lần GC trước. Live 200 MB, GOGC=100 → GC ở 400 MB. Tăng GOGC: ít GC hơn, tốn RAM hơn. <code>GOGC=off</code> tắt GC.</div>
-            <div><h4>GOMEMLIMIT (1.19)</h4>Giới hạn mềm cho tổng bộ nhớ runtime. Gần chạm giới hạn thì GC chạy dày hơn bất kể GOGC. Đặt khoảng 80–90% memory limit của container để tránh bị OOM kill.</div>
+            <div><h4>GOGC (mặc định 100)</h4>Chạy GC tiếp theo khi heap tăng thêm GOGC% so với heap còn sống sau lần GC trước. Live 200 MB, GOGC=100 → GC ở 400 MB. Tăng GOGC: ít GC hơn, tốn RAM (Random Access Memory) hơn. <code>GOGC=off</code> tắt GC.</div>
+            <div><h4>GOMEMLIMIT (1.19)</h4>Giới hạn mềm cho tổng bộ nhớ runtime. Gần chạm giới hạn thì GC chạy dày hơn bất kể GOGC. Đặt khoảng 80–90% memory limit của container để tránh bị OOM (Out Of Memory) kill.</div>
           </div>
           <CodeCompare goLang="bash" jsLang="bash" go={`# container 1 GiB: GC thưa khi còn dư RAM, dày lên khi gần 900 MiB
 GOGC=200 GOMEMLIMIT=900MiB ./app

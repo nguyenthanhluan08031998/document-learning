@@ -47,16 +47,16 @@ export default function DesignSsoPage() {
 
         <section id="sso-what">
           <h2><span className="n">01</span>What is SSO</h2>
-          <p><b>Single Sign-On</b>: sign in once at the IdP and use every application that trusts it. In microservices, letting each service implement login duplicates code, drifts in policy and is hard to change (adding MFA, social login). One IdP fixes all three.</p>
+          <p><b>Single Sign-On</b>: sign in once at the IdP (Identity Provider) and use every application that trusts it. In microservices, letting each service implement login duplicates code, drifts in policy and is hard to change (adding MFA (Multi-Factor Authentication), social login). One IdP fixes all three.</p>
           <div className="tbl">
             <table>
               <thead>
                 <tr><th>Standard</th><th>What it does</th><th>Note</th></tr>
               </thead>
               <tbody>
-                <tr><td><b>OAuth 2.0</b></td><td>Authorization: issues an <i>access token</i> to call APIs</td><td>Does not say who the user is</td></tr>
+                <tr><td><b>OAuth 2.0</b></td><td>Authorization: issues an <i>access token</i> to call API (Application Programming Interface)s</td><td>Does not say who the user is</td></tr>
                 <tr><td><b>OpenID Connect (OIDC)</b></td><td>Authentication on top of OAuth 2.0: adds an <i>ID token</i> carrying identity</td><td>Today&apos;s default choice</td></tr>
-                <tr><td><b>SAML 2.0</b></td><td>XML-based SSO, common in older enterprise systems</td><td>Use when a partner requires it</td></tr>
+                <tr><td><b>SAML (Security Assertion Markup Language) 2.0</b></td><td>XML (Extensible Markup Language)-based SSO (Single Sign-On), common in older enterprise systems</td><td>Use when a partner requires it</td></tr>
               </tbody>
             </table>
           </div>
@@ -65,7 +65,7 @@ export default function DesignSsoPage() {
 
         <section id="sso-flow">
           <h2><span className="n">02</span>Login flow: Authorization Code + PKCE</h2>
-          <p>This is the flow to use for web, SPAs and mobile. <b>PKCE</b> (code verifier and code challenge) stops an attacker who intercepts the <code>code</code> from exchanging it for tokens.</p>
+          <p>This is the flow to use for web, SPAs and mobile. <b>PKCE (Proof Key for Code Exchange)</b> (code verifier and code challenge) stops an attacker who intercepts the <code>code</code> from exchanging it for tokens.</p>
           <figure className="fig">
             <div className="scroll">
               <svg viewBox="0 0 900 350" role="img" aria-label="OIDC flow: the browser sends an authorize request to the IdP, logs in, receives a code, exchanges it for tokens, then calls the API Gateway with a Bearer token; the gateway verifies the signature with the IdP's JWKS and forwards to the service">
@@ -128,7 +128,7 @@ const { access_token, id_token, refresh_token } = await res.json();`}</Code>
               </tbody>
             </table>
           </div>
-          <p>A JWT has three parts, <code>header.payload.signature</code>. The payload is only <b>base64-encoded, not secret</b>; anyone can read it, so keep sensitive data out. The signature is what proves the IdP issued it.</p>
+          <p>A JWT (JSON Web Token) has three parts, <code>header.payload.signature</code>. The payload is only <b>base64-encoded, not secret</b>; anyone can read it, so keep sensitive data out. The signature is what proves the IdP issued it.</p>
           <Code lang="json">{`{
   "iss": "https://idp.example.com/",
   "sub": "user-1842",
@@ -173,7 +173,7 @@ export async function authenticate(req, res, next) {
             <li><b>Forward the user&apos;s token:</b> simple and keeps the user identity, but the token has a wide audience and is exposed in many places.</li>
             <li><b>Token exchange (RFC 8693):</b> a service swaps the user token for a new one whose <code>aud</code> is the target service, with narrower scope. Keeps identity while reducing risk.</li>
             <li><b>Client credentials:</b> when there is no user (background jobs, workers). The service has its own client id and secret and requests a token for itself.</li>
-            <li><b>mTLS (service mesh):</b> below the token layer, authenticates the <i>workload</i> with mutual certificates (Istio, Linkerd). It proves &quot;which service is calling&quot;, while the token proves &quot;on behalf of which user&quot;.</li>
+            <li><b>mTLS (mutual Transport Layer Security) (service mesh):</b> below the token layer, authenticates the <i>workload</i> with mutual certificates (Istio, Linkerd). It proves &quot;which service is calling&quot;, while the token proves &quot;on behalf of which user&quot;.</li>
           </ul>
           <Code lang="ts">{`// Client credentials: a worker gets its own token (no user involved)
 const res = await fetch("https://idp.example.com/token", {
@@ -224,7 +224,7 @@ async function getOrder(req, res) {
             <li>Use Authorization Code + PKCE; no Implicit or Password grants.</li>
             <li>Short-lived access tokens, rotating refresh tokens, stored safely (<code>HttpOnly</code> + <code>Secure</code> + <code>SameSite</code> cookies, avoid localStorage where possible).</li>
             <li>Each service verifies the signature, <code>iss</code>, <code>aud</code> and <code>exp</code> itself; never trust a user header sent by a client.</li>
-            <li>Cache JWKS, rotate signing keys regularly, pin the algorithm (RS256 or ES256), reject <code>alg: none</code>.</li>
+            <li>Cache JWKS (JSON Web Key Set), rotate signing keys regularly, pin the algorithm (RS256 or ES256), reject <code>alg: none</code>.</li>
             <li>Token exchange or client credentials between services; mTLS at the network layer.</li>
             <li>Check that <code>state</code> and <code>redirect_uri</code> match the pre-registered list.</li>
             <li>Never log tokens; log <code>sub</code> and a request id for tracing.</li>

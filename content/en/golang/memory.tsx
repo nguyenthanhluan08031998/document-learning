@@ -35,7 +35,7 @@ export default function GoMemoryPage() {
         <header className="hero">
           <div className="eyebrow">go · memory</div>
           <h1>Memory, Escape Analysis and the GC</h1>
-          <p className="lede">Stack variables are nearly free; heap variables must be cleaned up by the GC. Most performance work in Go is cutting heap allocations, and understanding the GC to tune GOGC and GOMEMLIMIT in the right places.</p>
+          <p className="lede">Stack variables are nearly free; heap variables must be cleaned up by the GC (Garbage Collector). Most performance work in Go is cutting heap allocations, and understanding the GC to tune GOGC and GOMEMLIMIT in the right places.</p>
           <div className="tape" aria-hidden="true">
             <div>-gcflags=-m</div>
             <div>tri-color</div>
@@ -105,9 +105,9 @@ console.log(process.memoryUsage().heapUsed);`} />
             <figcaption>Every object starts white; roots turn grey; grey objects are taken one by one and scanned, their children turn grey and they turn black. When no grey is left, whatever is still white is garbage.</figcaption>
           </figure>
           <ul className="plain">
-            <li><b>Concurrent:</b> marking runs alongside your code (about 25% of CPU by default). Because the program keeps changing pointers while marking, the compiler inserts a <b>write barrier</b> so a black object never points to a white object the GC does not know about.</li>
+            <li><b>Concurrent:</b> marking runs alongside your code (about 25% of the Central Processing Unit (CPU) by default). Because the program keeps changing pointers while marking, the compiler inserts a <b>write barrier</b> so a black object never points to a white object the GC does not know about.</li>
             <li><b>Non-generational, non-compacting:</b> no young/old generations like Java, objects never move. Size-class allocation keeps fragmentation low instead.</li>
-            <li><b>GC assist:</b> a goroutine allocating fast during marking is made to help with marking, so that request&apos;s latency rises. This often hurts more than STW.</li>
+            <li><b>GC assist:</b> a goroutine allocating fast during marking is made to help with marking, so that request&apos;s latency rises. This often hurts more than STW (Stop-The-World).</li>
             <li><b>Green Tea GC</b> (default since 1.26): scans memory page by page instead of chasing individual objects, using the CPU cache better and cutting GC time by 10–40%.</li>
           </ul>
         </section>
@@ -137,8 +137,8 @@ console.log(process.memoryUsage().heapUsed);`} />
         <section id="gm-tune">
           <h2><span className="n">04</span>GOGC and GOMEMLIMIT</h2>
           <div className="cmp">
-            <div><h4>GOGC (default 100)</h4>The next GC runs when the heap has grown by GOGC% over the live heap after the last GC. Live 200 MB, GOGC=100 → GC at 400 MB. Higher GOGC: fewer GCs, more RAM. <code>GOGC=off</code> disables the GC.</div>
-            <div><h4>GOMEMLIMIT (1.19)</h4>A soft limit on total runtime memory. Close to the limit the GC runs more often regardless of GOGC. Set it to about 80–90% of the container memory limit to avoid OOM kills.</div>
+            <div><h4>GOGC (default 100)</h4>The next GC runs when the heap has grown by GOGC% over the live heap after the last GC. Live 200 MB, GOGC=100 → GC at 400 MB. Higher GOGC: fewer GCs, more RAM (Random Access Memory). <code>GOGC=off</code> disables the GC.</div>
+            <div><h4>GOMEMLIMIT (1.19)</h4>A soft limit on total runtime memory. Close to the limit the GC runs more often regardless of GOGC. Set it to about 80–90% of the container memory limit to avoid OOM (Out Of Memory) kills.</div>
           </div>
           <CodeCompare goLang="bash" jsLang="bash" go={`# 1 GiB container: sparse GCs while RAM is free, denser near 900 MiB
 GOGC=200 GOMEMLIMIT=900MiB ./app

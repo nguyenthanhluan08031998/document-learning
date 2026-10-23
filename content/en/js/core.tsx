@@ -102,7 +102,7 @@ for (let j = 0; j < 3; j++) setTimeout(() => console.log(j)); // 0 1 2`}</Code>
                 <tr><td><code>var</code></td><td>Hoisted, value is <code>undefined</code></td></tr>
                 <tr><td><code>let</code> / <code>const</code></td><td>In the Temporal Dead Zone: access throws <code>ReferenceError</code></td></tr>
                 <tr><td><code>function foo() {"{}"}</code></td><td>The whole function is hoisted, callable before the declaration</td></tr>
-                <tr><td><code>const foo = () =&gt; {"{}"}</code></td><td>A <code>const</code> variable, so the TDZ applies</td></tr>
+                <tr><td><code>const foo = () =&gt; {"{}"}</code></td><td>A <code>const</code> variable, so the TDZ (Temporal Dead Zone) applies</td></tr>
               </tbody>
             </table>
           </div>

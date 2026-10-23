@@ -15,6 +15,10 @@ import git from "./git";
 import gitMergeRebase from "./git/merge-rebase";
 import gitWorkflow from "./git/workflow";
 import aiRag from "./ai/rag";
+import golangBasics from "./golang/basics";
+import golangErrors from "./golang/errors";
+import golangHttpDb from "./golang/http-db";
+import golangSyncPatterns from "./golang/sync-patterns";
 import golangConcurrency from "./golang/concurrency";
 import golangDataStructures from "./golang/data-structures";
 import golangInterview from "./golang/interview";
@@ -54,6 +58,10 @@ import operationsStructuredLogging from "./operations/structured-logging";
 // Page body components keyed by "group/slug", plus "<area>" for an area overview
 export const PAGES: Record<string, ComponentType> = {
   "ai/rag": aiRag,
+  "golang/basics": golangBasics,
+  "golang/errors": golangErrors,
+  "golang/http-db": golangHttpDb,
+  "golang/sync-patterns": golangSyncPatterns,
   "golang/concurrency": golangConcurrency,
   "golang/data-structures": golangDataStructures,
   "golang/interview": golangInterview,

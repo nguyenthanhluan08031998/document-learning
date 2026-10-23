@@ -30,11 +30,11 @@ export default function DesignEdgePage() {
           <div className="tbl">
             <table>
               <thead>
-                <tr><th></th><th>Reverse Proxy</th><th>API Gateway</th><th>Load Balancer</th></tr>
+                <tr><th></th><th>Reverse Proxy</th><th>API (Application Programming Interface) Gateway</th><th>Load Balancer</th></tr>
               </thead>
               <tbody>
                 <tr><td><b>Purpose</b></td><td>Receive requests on behalf of servers</td><td>One front door for many services</td><td>Spread requests across replicas</td></tr>
-                <tr><td><b>Understands</b></td><td>HTTP (host, path)</td><td>APIs (user, key, quota, version)</td><td>Load and server health</td></tr>
+                <tr><td><b>Understands</b></td><td>HTTP (HyperText Transfer Protocol) (host, path)</td><td>APIs (user, key, quota, version)</td><td>Load and server health</td></tr>
                 <tr><td><b>Merges several services</b></td><td>No</td><td>Yes</td><td>No</td></tr>
               </tbody>
             </table>
@@ -44,8 +44,8 @@ export default function DesignEdgePage() {
         <section id="ed-each">
           <h2><span className="n">02</span>What each one does</h2>
           <div className="pp">
-            <div><span className="pl">Reverse Proxy</span>Clients only know the proxy&apos;s address; real servers are never exposed to the internet. Handles TLS termination, caching, compression, static files.</div>
-            <div><span className="pl">API Gateway</span>A proxy that understands your API: authentication, rate limiting, routing <code>/orders</code> to order-svc, merging results from several services. See also the SSO &amp; Microservice page.</div>
+            <div><span className="pl">Reverse Proxy</span>Clients only know the proxy&apos;s address; real servers are never exposed to the internet. Handles TLS (Transport Layer Security) termination, caching, compression, static files.</div>
+            <div><span className="pl">API Gateway</span>A proxy that understands your API: authentication, rate limiting, routing <code>/orders</code> to order-svc, merging results from several services. See also the SSO (Single Sign-On) &amp; Microservice page.</div>
             <div><span className="pl">Load Balancer</span>One public address, many replicas behind it. Periodic health checks remove broken servers. L4 (TCP) is fast; L7 (HTTP) can route by path.</div>
             <div className="warnc"><span className="pl">Careful</span>The gateway is a single point of failure and easily grows into a &quot;big ball&quot;. Keep only shared concerns (auth, limits, routing) there; business logic belongs in services.</div>
           </div>

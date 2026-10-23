@@ -74,7 +74,7 @@ export default function GoConcurrencyPage() {
                 <Box x={400} y={204} w={110} h={44} title="sudog" sub="G7, &elem" />
                 <Box x={530} y={204} w={110} h={44} title="sudog" sub="G9, &elem" />
                 <path className="s-dl" d="M510 226 H528" />
-                <Label x={660} y={222}>G chờ được park, không tốn CPU;</Label>
+                <Label x={660} y={222}>G chờ được park, không tốn CPU (Central Processing Unit);</Label>
                 <Label x={660} y={238}>bên kia tới thì đánh thức</Label>
               </svg>
             </div>
@@ -137,7 +137,7 @@ Atomics.add(counter, 0, 1);`} />
 
         <section id="gc-leak">
           <h2><span className="n">05</span>Goroutine leak</h2>
-          <p>Goroutine bị chặn mãi trên channel hay lock không bao giờ được GC thu hồi: stack và mọi thứ nó tham chiếu nằm lại trong bộ nhớ. Số goroutine tăng dần theo thời gian là dấu hiệu rõ nhất.</p>
+          <p>Goroutine bị chặn mãi trên channel hay lock không bao giờ được GC (Garbage Collector) thu hồi: stack và mọi thứ nó tham chiếu nằm lại trong bộ nhớ. Số goroutine tăng dần theo thời gian là dấu hiệu rõ nhất.</p>
           <CodeCompare go={`// Leak: hết timeout thì không ai đọc ch nữa, goroutine kẹt mãi ở ch <- r
 func fetch(ctx context.Context) (Result, error) {
     ch := make(chan Result)            // sửa: make(chan Result, 1)
@@ -172,7 +172,7 @@ async function fetchWithTimeout(ms) {
     ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second) // client ngắt → r.Context() huỷ
     defer cancel()                       // luôn gọi, kể cả khi đã timeout: gỡ khỏi cây cha, dừng timer
 
-    order, err := h.repo.Find(ctx, r.PathValue("id")) // driver DB tôn trọng ctx
+    order, err := h.repo.Find(ctx, r.PathValue("id")) // driver DB (Database) tôn trọng ctx
     ...
 }
 

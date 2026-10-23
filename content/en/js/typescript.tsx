@@ -41,7 +41,7 @@ total(10);        // compile error: expected 2 arguments`}</Code>
             <li>Wrong types, misspelled properties and unhandled <code>undefined</code> are stopped at build time instead of at runtime.</li>
             <li>Types are living documentation: read a function signature and you know what to pass.</li>
             <li>Rename or reshape data and the compiler points to every place to fix.</li>
-            <li>Types do <b>not</b> check data at runtime (JSON from an API, user input). That still needs validation, for example with zod.</li>
+            <li>Types do <b>not</b> check data at runtime such as JSON (JavaScript Object Notation) from an API (Application Programming Interface) or user input. That still needs validation, for example with zod.</li>
           </ul>
         </section>
 

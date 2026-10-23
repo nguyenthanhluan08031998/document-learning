@@ -74,7 +74,7 @@ export default function GoConcurrencyPage() {
                 <Box x={400} y={204} w={110} h={44} title="sudog" sub="G7, &elem" />
                 <Box x={530} y={204} w={110} h={44} title="sudog" sub="G9, &elem" />
                 <path className="s-dl" d="M510 226 H528" />
-                <Label x={660} y={222}>waiting Gs are parked, no CPU;</Label>
+                <Label x={660} y={222}>waiting Gs are parked, no CPU (Central Processing Unit);</Label>
                 <Label x={660} y={238}>woken when the other side comes</Label>
               </svg>
             </div>
@@ -137,7 +137,7 @@ Atomics.add(counter, 0, 1);`} />
 
         <section id="gc-leak">
           <h2><span className="n">05</span>Goroutine leaks</h2>
-          <p>A goroutine blocked forever on a channel or lock is never reclaimed by the GC: its stack and everything it references stay in memory. A goroutine count that keeps climbing is the clearest sign.</p>
+          <p>A goroutine blocked forever on a channel or lock is never reclaimed by the GC (Garbage Collector): its stack and everything it references stay in memory. A goroutine count that keeps climbing is the clearest sign.</p>
           <CodeCompare go={`// Leak: after the timeout nobody reads ch, so the goroutine is stuck at ch <- r forever
 func fetch(ctx context.Context) (Result, error) {
     ch := make(chan Result)            // fix: make(chan Result, 1)
@@ -172,7 +172,7 @@ async function fetchWithTimeout(ms) {
     ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second) // client disconnects → r.Context() cancelled
     defer cancel()                       // always call it, even after a timeout: detaches from the parent, stops the timer
 
-    order, err := h.repo.Find(ctx, r.PathValue("id")) // the DB driver honours ctx
+    order, err := h.repo.Find(ctx, r.PathValue("id")) // the DB (Database) driver honours ctx
     ...
 }
 

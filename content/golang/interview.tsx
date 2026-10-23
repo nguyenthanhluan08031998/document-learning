@@ -51,7 +51,7 @@ export default function GoInterviewPage() {
                 {QA.map(([q, a, p]) => (
                   <tr key={q}><td><b>{q}</b></td><td>{a}</td><td><Link className="plink" href={`/golang/${p}/`}>{findPage("golang", p)?.page.label}</Link></td></tr>
                 ))}
-                <tr><td><b>gRPC hay REST?</b></td><td>gRPC (HTTP/2 + Protobuf) giữa các service nội bộ: nhanh, có contract, streaming. REST + JSON cho client ngoài, trình duyệt, đối tác.</td><td><Link className="plink" href="/api/compare/">API</Link></td></tr>
+                <tr><td><b>gRPC hay REST (Representational State Transfer)?</b></td><td>gRPC (HTTP/2 + Protobuf) giữa các service nội bộ: nhanh, có contract, streaming. REST + JSON (JavaScript Object Notation) cho client ngoài, trình duyệt, đối tác.</td><td><Link className="plink" href="/api/compare/">API (Application Programming Interface)</Link></td></tr>
               </tbody>
             </table>
           </div>
@@ -61,10 +61,10 @@ export default function GoInterviewPage() {
           <h2><span className="n">02</span>ORM (GORM, Ent) hay SQL (sqlx, pgx, sqlc)</h2>
           <div className="tbl">
             <table>
-              <thead><tr><th></th><th>GORM</th><th>Ent</th><th>sqlc / sqlx / pgx</th></tr></thead>
+              <thead><tr><th></th><th>GORM (Object-Relational Mapping)</th><th>Ent</th><th>sqlc / sqlx / pgx</th></tr></thead>
               <tbody>
-                <tr><td><b>Cách viết</b></td><td>Chuỗi method, reflection lúc chạy</td><td>Định nghĩa schema bằng Go, sinh code có kiểu</td><td>Viết SQL thật; sqlc sinh hàm Go có kiểu từ file .sql</td></tr>
-                <tr><td><b>Mạnh</b></td><td>CRUD nhanh, nhiều plugin</td><td>Kiểu an toàn, quan hệ đồ thị, migration</td><td>Thấy rõ query, tối ưu được index/CTE/lock, nhanh nhất</td></tr>
+                <tr><td><b>Cách viết</b></td><td>Chuỗi method, reflection lúc chạy</td><td>Định nghĩa schema bằng Go, sinh code có kiểu</td><td>Viết SQL (Structured Query Language) thật; sqlc sinh hàm Go có kiểu từ file .sql</td></tr>
+                <tr><td><b>Mạnh</b></td><td>CRUD (Create, Read, Update, Delete) nhanh, nhiều plugin</td><td>Kiểu an toàn, quan hệ đồ thị, migration</td><td>Thấy rõ query, tối ưu được index/CTE/lock, nhanh nhất</td></tr>
                 <tr><td><b>Yếu</b></td><td>Query sinh ra khó đoán, N+1, lỗi phát hiện lúc chạy</td><td>Học thêm DSL, code sinh nhiều</td><td>Viết nhiều SQL hơn, query động phải tự ghép</td></tr>
               </tbody>
             </table>
@@ -77,7 +77,7 @@ export default function GoInterviewPage() {
           <ul className="plain">
             <li><b>net/http</b>: từ 1.22 router chuẩn đã có method và path param (<code>GET /users/{"{id}"}</code>), đủ cho phần lớn API. Không phụ thuộc ngoài, middleware chỉ là <code>func(http.Handler) http.Handler</code>.</li>
             <li><b>Gin, Echo, Chi</b>: dựa trên net/http, thêm binding, validation, middleware có sẵn; Chi gần chuẩn nhất.</li>
-            <li><b>Fiber</b>: dựa trên fasthttp, không tương thích <code>http.Handler</code>, không dùng chung middleware và hệ sinh thái chuẩn (OpenTelemetry, pprof handler). Nhanh trên benchmark nhưng hiếm khi HTTP layer là nút cổ chai.</li>
+            <li><b>Fiber</b>: dựa trên fasthttp, không tương thích <code>http.Handler</code>, không dùng chung middleware và hệ sinh thái chuẩn (OpenTelemetry, pprof handler). Nhanh trên benchmark nhưng hiếm khi HTTP (HyperText Transfer Protocol) layer là nút cổ chai.</li>
           </ul>
         </section>
 
@@ -85,7 +85,7 @@ export default function GoInterviewPage() {
           <h2><span className="n">04</span>Chiến lược test</h2>
           <div className="cmp">
             <div><h4>Unit test + mock</h4>Mock interface nhỏ ở tầng service (gomock, testify/mock, hoặc tự viết fake). Nhanh, chạy mỗi lần lưu. Dễ mock quá tay: test pass nhưng SQL thật sai.</div>
-            <div><h4>Integration + Testcontainers</h4>Dựng Postgres, Redis, Kafka thật bằng Docker trong test. Bắt được lỗi SQL, migration, transaction, lock. Chậm hơn, chạy trong CI.</div>
+            <div><h4>Integration + Testcontainers</h4>Dựng Postgres, Redis, Kafka thật bằng Docker trong test. Bắt được lỗi SQL, migration, transaction, lock. Chậm hơn, chạy trong CI (Continuous Integration).</div>
           </div>
           <CodeCompare go={`// Table-driven test + subtest chạy song song
 func TestCalcFee(t *testing.T) {

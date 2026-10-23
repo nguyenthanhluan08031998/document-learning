@@ -93,7 +93,7 @@ export default function GoVersionsPage() {
             <table>
               <thead><tr><th>Mốc</th><th>Trước</th><th>Sau</th></tr></thead>
               <tbody>
-                <tr><td><b>1.5</b> · GC</td><td>Stop-the-world, pause hàng trăm ms với heap lớn</td><td>Concurrent mark &amp; sweep, pause dưới 10 ms (1.8: dưới 100 µs)</td></tr>
+                <tr><td><b>1.5</b> · GC (Garbage Collector)</td><td>Stop-the-world, pause hàng trăm ms với heap lớn</td><td>Concurrent mark &amp; sweep, pause dưới 10 ms (1.8: dưới 100 µs)</td></tr>
                 <tr><td><b>1.11–1.16</b> · Modules</td><td>GOPATH: mọi code nằm trong một thư mục, không khoá phiên bản thư viện</td><td>go.mod, go.sum: mỗi project tự khai báo phiên bản, đặt ở đâu cũng được</td></tr>
                 <tr><td><b>1.13</b> · Lỗi</td><td>So chuỗi lỗi, mất lỗi gốc khi bọc</td><td><code>fmt.Errorf(&quot;...: %w&quot;, err)</code>, <code>errors.Is</code>, <code>errors.As</code></td></tr>
                 <tr><td><b>1.14</b> · Preemption</td><td>Vòng lặp không gọi hàm có thể giữ P mãi, GC phải chờ</td><td>Runtime gửi signal để ngắt goroutine chạy quá 10 ms</td></tr>
@@ -102,7 +102,7 @@ export default function GoVersionsPage() {
                 <tr><td><b>1.22</b> · Biến vòng lặp</td><td>Mọi vòng lặp dùng chung một biến, goroutine/closure bắt nhầm giá trị cuối</td><td>Mỗi vòng một biến mới</td></tr>
                 <tr><td><b>1.23</b> · Iterator</td><td>Tự viết Next()/channel để duyệt</td><td><code>for v := range seq</code> với <code>iter.Seq[T]</code></td></tr>
                 <tr><td><b>1.24</b> · Map</td><td>Bucket 8 ô + overflow bucket</td><td>Swiss Tables, nhanh hơn và tốn ít bộ nhớ hơn</td></tr>
-                <tr><td><b>1.25–1.26</b> · Container, GC</td><td>GOMAXPROCS = số CPU của máy, kể cả khi container chỉ được 2 CPU</td><td>Tự theo CPU limit; Green Tea GC mặc định</td></tr>
+                <tr><td><b>1.25–1.26</b> · Container, GC</td><td>GOMAXPROCS = số CPU (Central Processing Unit) của máy, kể cả khi container chỉ được 2 CPU</td><td>Tự theo CPU limit; Green Tea GC mặc định</td></tr>
                 <tr><td><b>1.27</b> · Generic method</td><td>Method không có type parameter riêng, phải viết hàm rời</td><td><code>func (c *Cache) Get[T any](key string) (T, bool)</code></td></tr>
               </tbody>
             </table>

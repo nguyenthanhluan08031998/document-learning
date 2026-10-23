@@ -22,7 +22,7 @@ export default function GoProductionPage() {
         <header className="hero">
           <div className="eyebrow">go · production</div>
           <h1>Go in production</h1>
-          <p className="lede">Problems seniors face: processing millions of jobs without exhausting resources, configuring the DB connection pool, stopping a request pile-up when a cache entry expires, and debugging 100% CPU or OOM with pprof.</p>
+          <p className="lede">Problems seniors face: processing millions of jobs without exhausting resources, configuring the DB (Database) connection pool, stopping a request pile-up when a cache entry expires, and debugging 100% CPU (Central Processing Unit) or OOM (Out Of Memory) with pprof.</p>
           <div className="tape" aria-hidden="true">
             <div>errgroup</div>
             <div>backpressure</div>
@@ -85,7 +85,7 @@ async function run(signal, jobs /* AsyncIterable<Job> */, workers) {
 }`} />
           <ul className="plain">
             <li><b>Don&apos;t</b> <code>go handle(j)</code> per job: a million jobs means a million goroutines opening DB connections at once.</li>
-            <li>Size workers to the bottleneck: CPU-bound work ≈ GOMAXPROCS; I/O-bound work by the limit of the DB/API behind it, then measure and tune.</li>
+            <li>Size workers to the bottleneck: CPU-bound work ≈ GOMAXPROCS; I/O (Input/Output)-bound work by the limit of the DB/API behind it, then measure and tune.</li>
             <li>Write results in batches (batch insert) and use <code>context</code> to stop cleanly on deploy (graceful shutdown).</li>
           </ul>
         </section>
@@ -120,7 +120,7 @@ try {
               <thead><tr><th>Misconfiguration</th><th>Consequence</th></tr></thead>
               <tbody>
                 <tr><td>Unlimited MaxOpenConns</td><td>Under load thousands of connections open, Postgres returns <code>too many connections</code>, every instance fails together</td></tr>
-                <tr><td>MaxIdleConns = 2 (default) under load</td><td>Connections are constantly closed and reopened, paying TLS handshakes, latency rises</td></tr>
+                <tr><td>MaxIdleConns = 2 (default) under load</td><td>Connections are constantly closed and reopened, paying TLS (Transport Layer Security) handshakes, latency rises</td></tr>
                 <tr><td>No ConnMaxLifetime</td><td>Dead connections after a DB failover or a proxy/LB cutting them, <code>bad connection</code> errors</td></tr>
                 <tr><td>MaxOpenConns too small, forgotten rows.Close / tx.Commit</td><td>Requests queue for a connection; <code>db.Stats().WaitCount</code> climbs</td></tr>
               </tbody>
@@ -192,7 +192,7 @@ inspector.open(9229, "127.0.0.1");
                 <tr><td><b>Goroutine</b></td><td>How many goroutines and which line they are stuck on</td><td><code>curl .../goroutine?debug=2</code></td></tr>
                 <tr><td><b>goroutineleak</b> (1.27)</td><td>Goroutines blocked forever on something nothing can reach</td><td><code>.../goroutineleak</code></td></tr>
                 <tr><td><b>Block / Mutex</b></td><td>How long goroutines wait on channels and locks; enable with <code>runtime.SetBlockProfileRate</code>, <code>SetMutexProfileFraction</code></td><td><code>.../block</code>, <code>.../mutex</code></td></tr>
-                <tr><td><b>Trace</b></td><td>Which P each goroutine ran on, GC, syscalls, scheduler waits over time</td><td><code>curl .../trace?seconds=5 &gt; t.out; go tool trace t.out</code></td></tr>
+                <tr><td><b>Trace</b></td><td>Which P each goroutine ran on, GC (Garbage Collector), syscalls, scheduler waits over time</td><td><code>curl .../trace?seconds=5 &gt; t.out; go tool trace t.out</code></td></tr>
               </tbody>
             </table>
           </div>
@@ -216,7 +216,7 @@ inspector.open(9229, "127.0.0.1");
               <ol className="steps">
                 <li><div><b>Read the metrics</b><div className="d">Does RSS climb steadily (leak) or spike (one big request)? Compare go_memstats_heap_inuse with RSS.</div></div></li>
                 <li><div><b>Goroutine count</b><div className="d">Rising over time → goroutine leak; read the goroutine profile.</div></div></li>
-                <li><div><b>Heap profile, inuse_space</b><div className="d">Take two a few minutes apart and compare with -diff_base. Usual suspects: unbounded caches, maps never cleaned, sub-slices pinning big arrays, reading whole bodies/files into RAM.</div></div></li>
+                <li><div><b>Heap profile, inuse_space</b><div className="d">Take two a few minutes apart and compare with -diff_base. Usual suspects: unbounded caches, maps never cleaned, sub-slices pinning big arrays, reading whole bodies/files into RAM (Random Access Memory).</div></div></li>
                 <li><div><b>Stop the bleeding</b><div className="d">GOMEMLIMIT ≈ 90% of the container limit, cap request sizes, then fix the root cause.</div></div></li>
               </ol>
             </div>
@@ -227,7 +227,7 @@ inspector.open(9229, "127.0.0.1");
           <h2><span className="n">06</span>Zero/low allocation techniques</h2>
           <ul className="plain">
             <li>Preallocate with <code>make([]T, 0, n)</code>, <code>strings.Builder.Grow</code>; reuse buffers through <code>sync.Pool</code>.</li>
-            <li>Use <code>Append</code>-style APIs: <code>strconv.AppendInt</code>, <code>time.AppendFormat</code>, writing straight into an existing <code>[]byte</code>.</li>
+            <li>Use <code>Append</code>-style API (Application Programming Interface)s: <code>strconv.AppendInt</code>, <code>time.AppendFormat</code>, writing straight into an existing <code>[]byte</code>.</li>
             <li>Avoid needless <code>[]byte</code> ↔ <code>string</code> conversions; avoid <code>fmt.Sprintf</code> in hot paths; avoid unnecessary interfaces and closures.</li>
             <li>Pass large structs by pointer, small ones by value (values live on the stack and give the GC no work).</li>
             <li>Confirm with <code>-benchmem</code> and <code>-gcflags=-m</code>; see also <Link className="plink" href="/en/golang/memory/">Memory &amp; GC</Link>.</li>

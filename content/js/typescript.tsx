@@ -35,13 +35,13 @@ export default function JsTypescriptPage() {
   return price * qty;
 }
 
-total(10, "2");   // compile error: string is not assignable to number
-total(10);        // compile error: expected 2 arguments`}</Code>
+total(10, "2");   // lỗi biên dịch: string không gán được cho number
+total(10);        // lỗi biên dịch: cần 2 tham số`}</Code>
           <ul className="plain">
             <li>Lỗi như sai kiểu, sai tên thuộc tính, quên xử lý <code>undefined</code> bị chặn lúc build thay vì lúc chạy.</li>
             <li>Kiểu là tài liệu sống: đọc chữ ký hàm là biết cần truyền gì.</li>
             <li>Đổi tên hoặc đổi cấu trúc dữ liệu, trình biên dịch chỉ ra mọi chỗ phải sửa.</li>
-            <li>Kiểu <b>không</b> kiểm tra dữ liệu lúc chạy (JSON từ API, input người dùng). Phần đó vẫn cần validate, ví dụ bằng zod.</li>
+            <li>Kiểu <b>không</b> kiểm tra dữ liệu lúc chạy như JSON (JavaScript Object Notation) từ API (Application Programming Interface) hay input người dùng. Phần đó vẫn cần validate, ví dụ bằng zod.</li>
           </ul>
         </section>
 
@@ -51,17 +51,17 @@ total(10);        // compile error: expected 2 arguments`}</Code>
 const age: number = 30;
 const ok: boolean = true;
 const ids: number[] = [1, 2, 3];
-const pair: [string, number] = ["a", 1];      // tuple: fixed length and types
+const pair: [string, number] = ["a", 1];      // tuple: độ dài và kiểu cố định
 
-let anything: unknown;                         // safe "unknown": must narrow before use
-let unsafe: any;                               // turns the checker off, avoid
+let anything: unknown;                         // "unknown" an toàn: phải thu hẹp kiểu trước khi dùng
+let unsafe: any;                               // tắt kiểm tra kiểu, nên tránh
 
-function log(msg: string): void {}             // returns nothing
-function fail(msg: string): never { throw new Error(msg); } // never returns
+function log(msg: string): void {}             // không trả về gì
+function fail(msg: string): never { throw new Error(msg); } // không bao giờ trả về
 
 let id: string | number = 1;                   // union
-const mode: "dev" | "prod" = "dev";            // literal type
-const age2 = 30;                               // inferred as number, no annotation needed`}</Code>
+const mode: "dev" | "prod" = "dev";            // kiểu literal
+const age2 = 30;                               // tự suy ra number, không cần ghi kiểu`}</Code>
           <div className="note tip"><b>Để TS suy luận:</b> không cần ghi kiểu cho biến đã có giá trị khởi tạo. Chỉ ghi kiểu ở tham số hàm, giá trị trả về của hàm export, và chỗ TS không suy ra được.</div>
         </section>
 
@@ -70,18 +70,18 @@ const age2 = 30;                               // inferred as number, no annotat
           <Code lang="ts">{`interface User {
   id: string;
   name: string;
-  email?: string;               // optional
-  readonly createdAt: Date;     // cannot be reassigned
+  email?: string;               // không bắt buộc
+  readonly createdAt: Date;     // không gán lại được
 }
 
-interface Admin extends User {  // interfaces extend
+interface Admin extends User {  // interface có thể mở rộng
   permissions: string[];
 }
 
-type Status = "pending" | "success" | "failed";   // union of literals
+type Status = "pending" | "success" | "failed";   // union của các literal
 type ID = string | number;
-type AdminUser = User & { permissions: string[] }; // intersection
-type Handler = (event: Event) => void;             // function type`}</Code>
+type AdminUser = User & { permissions: string[] }; // giao của hai kiểu
+type Handler = (event: Event) => void;             // kiểu hàm`}</Code>
           <div className="tbl">
             <table>
               <thead>
@@ -112,12 +112,12 @@ interface ApiResponse<T> {
 }
 type UserResponse = ApiResponse<User>;
 
-// Constraint: K must be a key of T
+// Ràng buộc: K phải là key của T
 function pick<T, K extends keyof T>(obj: T, key: K): T[K] {
   return obj[key];
 }
 pick(user, "name");    // string
-// pick(user, "nope"); // compile error`}</Code>
+// pick(user, "nope"); // lỗi biên dịch`}</Code>
         </section>
 
         <section id="ts-narrow">
@@ -128,17 +128,17 @@ pick(user, "name");    // string
   return v.toFixed(2);                               // v: number
 }
 
-// Discriminated union: one shared field tells the variants apart
+// Discriminated union: một trường chung để phân biệt các biến thể
 type Result =
   | { ok: true; data: string }
   | { ok: false; error: Error };
 
 function handle(r: Result) {
-  if (r.ok) console.log(r.data);   // TS knows "data" exists here
-  else console.error(r.error);     // and "error" exists here
+  if (r.ok) console.log(r.data);   // TS biết "data" tồn tại ở đây
+  else console.error(r.error);     // và "error" tồn tại ở đây
 }
 
-// Exhaustive check: adding a new variant makes this a compile error
+// Kiểm tra đủ nhánh: thêm biến thể mới sẽ gây lỗi biên dịch ở đây
 type Shape = { kind: "circle"; r: number } | { kind: "square"; a: number };
 function area(s: Shape) {
   switch (s.kind) {
@@ -169,9 +169,9 @@ function area(s: Shape) {
           </div>
           <Code lang="ts">{`type UpdateUserDto = Partial<Omit<User, "id" | "createdAt">>;
 type RoleMap = Record<"admin" | "member", string[]>;
-type Data = Awaited<ReturnType<typeof getUser>>;   // the resolved value of getUser
+type Data = Awaited<ReturnType<typeof getUser>>;   // giá trị getUser trả về sau khi resolve
 
-// Class with access modifiers
+// Class với access modifier
 class Account {
   constructor(
     public readonly id: string,
@@ -203,7 +203,7 @@ class Account {
             <li><b>Tránh ép kiểu <code>as</code></b> trừ khi bạn biết hơn trình biên dịch; ưu tiên type guard.</li>
             <li><b>Validate dữ liệu ngoài</b> (API, form) lúc chạy, rồi suy ra kiểu từ schema.</li>
           </ul>
-          <Code lang="ts">{`// Type guard: a runtime check that narrows the type
+          <Code lang="ts">{`// Type guard: kiểm tra lúc chạy để thu hẹp kiểu
 function isUser(v: unknown): v is User {
   return typeof v === "object" && v !== null && "id" in v && "name" in v;
 }

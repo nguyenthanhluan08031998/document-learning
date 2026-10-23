@@ -32,7 +32,7 @@ export default function JsAsyncPage() {
           <ul className="plain">
             <li><b>Call stack:</b> the synchronous code currently running.</li>
             <li><b>Microtask queue:</b> callbacks of <code>Promise.then</code>, <code>await</code>, <code>queueMicrotask</code>. High priority.</li>
-            <li><b>Task (macrotask) queue:</b> <code>setTimeout</code>, <code>setInterval</code>, I/O, UI events.</li>
+            <li><b>Task (macrotask) queue:</b> <code>setTimeout</code>, <code>setInterval</code>, I/O (Input/Output), UI (User Interface) events.</li>
           </ul>
           <p>Order: finish the stack, run <b>all</b> microtasks, take <b>one</b> task, repeat.</p>
           <Code lang="js">{`console.log("1 sync");

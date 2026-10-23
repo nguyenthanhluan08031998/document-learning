@@ -93,7 +93,7 @@ export default function GoVersionsPage() {
             <table>
               <thead><tr><th>Milestone</th><th>Before</th><th>After</th></tr></thead>
               <tbody>
-                <tr><td><b>1.5</b> · GC</td><td>Stop-the-world, pauses of hundreds of ms on large heaps</td><td>Concurrent mark &amp; sweep, pauses under 10 ms (1.8: under 100 µs)</td></tr>
+                <tr><td><b>1.5</b> · GC (Garbage Collector)</td><td>Stop-the-world, pauses of hundreds of ms on large heaps</td><td>Concurrent mark &amp; sweep, pauses under 10 ms (1.8: under 100 µs)</td></tr>
                 <tr><td><b>1.11–1.16</b> · Modules</td><td>GOPATH: all code in one directory, no pinned library versions</td><td>go.mod, go.sum: each project declares its versions and can live anywhere</td></tr>
                 <tr><td><b>1.13</b> · Errors</td><td>Comparing error strings, losing the cause when wrapping</td><td><code>fmt.Errorf(&quot;...: %w&quot;, err)</code>, <code>errors.Is</code>, <code>errors.As</code></td></tr>
                 <tr><td><b>1.14</b> · Preemption</td><td>A loop without function calls could hold a P forever and stall the GC</td><td>The runtime sends a signal to interrupt goroutines running over 10 ms</td></tr>
@@ -102,7 +102,7 @@ export default function GoVersionsPage() {
                 <tr><td><b>1.22</b> · Loop variables</td><td>One variable shared by all iterations; goroutines/closures saw the last value</td><td>A fresh variable per iteration</td></tr>
                 <tr><td><b>1.23</b> · Iterators</td><td>Hand-written Next() or channels to iterate</td><td><code>for v := range seq</code> with <code>iter.Seq[T]</code></td></tr>
                 <tr><td><b>1.24</b> · Maps</td><td>8-slot buckets plus overflow buckets</td><td>Swiss Tables, faster and smaller</td></tr>
-                <tr><td><b>1.25–1.26</b> · Containers, GC</td><td>GOMAXPROCS = host CPUs even when the container gets 2</td><td>Follows the CPU limit; Green Tea GC by default</td></tr>
+                <tr><td><b>1.25–1.26</b> · Containers, GC</td><td>GOMAXPROCS = host CPU (Central Processing Unit)s even when the container gets 2</td><td>Follows the CPU limit; Green Tea GC by default</td></tr>
                 <tr><td><b>1.27</b> · Generic methods</td><td>Methods could not have their own type parameters; use a free function</td><td><code>func (c *Cache) Get[T any](key string) (T, bool)</code></td></tr>
               </tbody>
             </table>

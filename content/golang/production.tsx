@@ -22,7 +22,7 @@ export default function GoProductionPage() {
         <header className="hero">
           <div className="eyebrow">go · production</div>
           <h1>Go trên production</h1>
-          <p className="lede">Những bài toán senior hay gặp: xử lý hàng triệu job mà không cạn tài nguyên, cấu hình pool kết nối DB, chống dồn request khi cache hết hạn, và debug CPU 100% hay OOM bằng pprof.</p>
+          <p className="lede">Những bài toán senior hay gặp: xử lý hàng triệu job mà không cạn tài nguyên, cấu hình pool kết nối DB (Database), chống dồn request khi cache hết hạn, và debug CPU (Central Processing Unit) 100% hay OOM (Out Of Memory) bằng pprof.</p>
           <div className="tape" aria-hidden="true">
             <div>errgroup</div>
             <div>backpressure</div>
@@ -85,7 +85,7 @@ async function run(signal, jobs /* AsyncIterable<Job> */, workers) {
 }`} />
           <ul className="plain">
             <li><b>Đừng</b> <code>go handle(j)</code> cho mỗi job: một triệu job là một triệu goroutine cùng mở kết nối DB.</li>
-            <li>Số worker theo nút cổ chai: việc CPU-bound ≈ GOMAXPROCS; việc I/O-bound theo giới hạn của DB/API phía sau, đo rồi chỉnh.</li>
+            <li>Số worker theo nút cổ chai: việc CPU-bound ≈ GOMAXPROCS; việc I/O (Input/Output)-bound theo giới hạn của DB/API phía sau, đo rồi chỉnh.</li>
             <li>Gom kết quả ghi theo lô (batch insert), dùng <code>context</code> để dừng gọn khi deploy (graceful shutdown).</li>
           </ul>
         </section>
@@ -120,7 +120,7 @@ try {
               <thead><tr><th>Cấu hình sai</th><th>Hậu quả</th></tr></thead>
               <tbody>
                 <tr><td>MaxOpenConns không giới hạn</td><td>Lúc tải cao mở hàng nghìn kết nối, Postgres báo <code>too many connections</code>, mọi instance cùng lỗi</td></tr>
-                <tr><td>MaxIdleConns = 2 (mặc định) khi tải cao</td><td>Kết nối liên tục bị đóng rồi mở lại, tốn TLS handshake, latency tăng</td></tr>
+                <tr><td>MaxIdleConns = 2 (mặc định) khi tải cao</td><td>Kết nối liên tục bị đóng rồi mở lại, tốn TLS (Transport Layer Security) handshake, latency tăng</td></tr>
                 <tr><td>Không đặt ConnMaxLifetime</td><td>Kết nối chết sau khi DB failover hoặc bị proxy/LB cắt, lỗi <code>bad connection</code></td></tr>
                 <tr><td>MaxOpenConns quá nhỏ, quên rows.Close / tx.Commit</td><td>Request xếp hàng chờ kết nối; <code>db.Stats().WaitCount</code> tăng</td></tr>
               </tbody>
@@ -192,11 +192,11 @@ inspector.open(9229, "127.0.0.1");
                 <tr><td><b>Goroutine</b></td><td>Bao nhiêu goroutine, đang kẹt ở dòng nào</td><td><code>curl .../goroutine?debug=2</code></td></tr>
                 <tr><td><b>goroutineleak</b> (1.27)</td><td>Goroutine chặn mãi trên thứ không còn ai với tới</td><td><code>.../goroutineleak</code></td></tr>
                 <tr><td><b>Block / Mutex</b></td><td>Chờ channel, chờ lock bao lâu; phải bật <code>runtime.SetBlockProfileRate</code>, <code>SetMutexProfileFraction</code></td><td><code>.../block</code>, <code>.../mutex</code></td></tr>
-                <tr><td><b>Trace</b></td><td>Từng goroutine chạy trên P nào, GC, syscall, chờ scheduler theo thời gian thực</td><td><code>curl .../trace?seconds=5 &gt; t.out; go tool trace t.out</code></td></tr>
+                <tr><td><b>Trace</b></td><td>Từng goroutine chạy trên P nào, GC (Garbage Collector), syscall, chờ scheduler theo thời gian thực</td><td><code>curl .../trace?seconds=5 &gt; t.out; go tool trace t.out</code></td></tr>
               </tbody>
             </table>
           </div>
-          <p className="sub">Trong pprof: <code>top</code>, <code>list TênHàm</code>, <code>-http=:8080</code> mở flame graph. So hai heap profile bằng <code>-diff_base</code> để thấy cái gì tăng. Bắt sự cố hiếm: <code>trace.FlightRecorder</code> (1.25) giữ vài giây trace gần nhất trong RAM, ghi ra khi có lỗi.</p>
+          <p className="sub">Trong pprof: <code>top</code>, <code>list TênHàm</code>, <code>-http=:8080</code> mở flame graph. So hai heap profile bằng <code>-diff_base</code> để thấy cái gì tăng. Bắt sự cố hiếm: <code>trace.FlightRecorder</code> (1.25) giữ vài giây trace gần nhất trong RAM (Random Access Memory), ghi ra khi có lỗi.</p>
         </section>
 
         <section id="gp-incident">
@@ -227,7 +227,7 @@ inspector.open(9229, "127.0.0.1");
           <h2><span className="n">06</span>Kỹ thuật zero/low allocation</h2>
           <ul className="plain">
             <li>Cấp phát trước <code>make([]T, 0, n)</code>, <code>strings.Builder.Grow</code>; dùng lại buffer qua <code>sync.Pool</code>.</li>
-            <li>Dùng API dạng <code>Append</code>: <code>strconv.AppendInt</code>, <code>time.AppendFormat</code>, ghi thẳng vào <code>[]byte</code> có sẵn.</li>
+            <li>Dùng API (Application Programming Interface) dạng <code>Append</code>: <code>strconv.AppendInt</code>, <code>time.AppendFormat</code>, ghi thẳng vào <code>[]byte</code> có sẵn.</li>
             <li>Tránh chuyển <code>[]byte</code> ↔ <code>string</code> thừa; tránh <code>fmt.Sprintf</code> trong hot path; tránh interface và closure không cần thiết.</li>
             <li>Truyền struct lớn bằng con trỏ, struct nhỏ bằng value (value nằm trên stack, không cho GC việc).</li>
             <li>Xác nhận bằng <code>-benchmem</code> và <code>-gcflags=-m</code>; xem thêm trang <Link className="plink" href="/golang/memory/">Bộ nhớ &amp; GC</Link>.</li>

@@ -30,7 +30,7 @@ export default function GoRuntimePage() {
         <header className="hero">
           <div className="eyebrow">go · runtime</div>
           <h1>Goroutine và scheduler GMP</h1>
-          <p className="lede">Go chạy hàng trăm nghìn goroutine trên vài OS thread nhờ scheduler M:N trong runtime. Hiểu G, M, P giải thích được vì sao goroutine rẻ, syscall chặn không làm treo chương trình và vì sao GOMAXPROCS quan trọng.</p>
+          <p className="lede">Go chạy hàng trăm nghìn goroutine trên vài OS (Operating System) thread nhờ scheduler M:N trong runtime. Hiểu G, M, P giải thích được vì sao goroutine rẻ, syscall chặn không làm treo chương trình và vì sao GOMAXPROCS quan trọng.</p>
           <div className="tape" aria-hidden="true">
             <div>G · goroutine</div>
             <div>M · OS thread</div>
@@ -93,7 +93,7 @@ export default function GoRuntimePage() {
           <h2><span className="n">03</span>P chọn goroutine nào để chạy</h2>
           <ol className="steps">
             <li><div><b>Mỗi 61 lượt, xem global queue trước</b><div className="d">Để goroutine trong global queue không bị bỏ đói.</div></div></li>
-            <li><div><b>runnext, rồi local run queue</b><div className="d">G vừa được tạo hoặc vừa được đánh thức nằm ở runnext để chạy ngay, giữ cache CPU còn nóng.</div></div></li>
+            <li><div><b>runnext, rồi local run queue</b><div className="d">G vừa được tạo hoặc vừa được đánh thức nằm ở runnext để chạy ngay, giữ cache CPU (Central Processing Unit) còn nóng.</div></div></li>
             <li><div><b>Global run queue</b><div className="d">Lấy một lô về local queue.</div></div></li>
             <li><div><b>Netpoller</b><div className="d">Lấy các G có socket đã sẵn sàng đọc/ghi.</div></div></li>
             <li><div><b>Work stealing</b><div className="d">Chọn ngẫu nhiên một P khác và lấy một nửa hàng đợi của nó. Không có gì để làm thì M đi ngủ, P được trả về danh sách rảnh.</div></div></li>
@@ -125,7 +125,7 @@ export default function GoRuntimePage() {
                 <Label x={336} y={222}>→ tách P0 sang M1, CPU không bị phí</Label>
 
                 <rect className="s-bg2" x="656" y="8" width="236" height="230" rx="10" />
-                <text className="s-lane2" x="670" y="30">I/O MẠNG</text>
+                <text className="s-lane2" x="670" y="30">I/O (Input/Output) MẠNG</text>
                 <Box x={690} y={50} w={170} h={50} title="Netpoller" sub="epoll · kqueue · IOCP" cls="s-disk" />
                 <G x={740} y={150} />
                 <Label x={760} y={154}>G3 chờ socket</Label>
@@ -142,7 +142,7 @@ export default function GoRuntimePage() {
         <section id="gr-preempt">
           <h2><span className="n">05</span>Preemption</h2>
           <ul className="plain">
-            <li><b>Trước 1.14 (cooperative):</b> goroutine chỉ nhường CPU ở điểm gọi hàm, khi chặn trên channel/lock/I/O. Một vòng lặp <code>for {"{}"}</code> không gọi hàm giữ P mãi, và GC chờ nó nên cả chương trình đứng.</li>
+            <li><b>Trước 1.14 (cooperative):</b> goroutine chỉ nhường CPU ở điểm gọi hàm, khi chặn trên channel/lock/I/O. Một vòng lặp <code>for {"{}"}</code> không gọi hàm giữ P mãi, và GC (Garbage Collector) chờ nó nên cả chương trình đứng.</li>
             <li><b>Từ 1.14 (asynchronous):</b> sysmon thấy G chạy liên tục quá 10 ms thì gửi signal (SIGURG) tới M; handler lưu trạng thái và đưa G về hàng đợi.</li>
             <li><code>runtime.Gosched()</code> nhường CPU chủ động; hiếm khi cần trong code thường.</li>
           </ul>
