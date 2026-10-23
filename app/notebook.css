@@ -242,3 +242,4 @@ a.plink:hover{text-decoration:underline}
 @media (max-width:1100px){.gsub{display:none}}
 @media (max-width:600px){.gsub{display:none} .groups-nav{width:100%} .groups-nav button{flex:1;justify-content:center;padding:7px 8px}}
 
+.fig img{display:block;max-width:min(100%,560px);height:auto;margin:0 auto;border-radius:8px}
