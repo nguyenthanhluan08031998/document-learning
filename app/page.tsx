@@ -13,11 +13,9 @@ export default function HomePage() {
         </header>
         <section>
           <h2>Hệ thống ví dụ: sàn thương mại điện tử</h2>
-          <figure className="fig">
-            <div className="scroll">
-              <SystemDesign />
-            </div>
-            <figcaption>System design chia theo tầng, đã tính cho flash sale 10 triệu user. Request đi từ trên xuống, mỗi tầng chặn bớt một phần tải; việc chờ được thì đẩy qua Kafka cho worker xử lý.</figcaption>
+          <figure className="fig sd-fig">
+            <SystemDesign />
+            <figcaption>Bấm vào một ô để xem chú thích (bấm ra ngoài hoặc nhấn × để đóng). System design chia theo tầng, đã tính cho flash sale 10 triệu user. Request đi từ trên xuống, mỗi tầng chặn bớt một phần tải; việc chờ được thì đẩy qua Kafka cho worker xử lý.</figcaption>
           </figure>
           <div className="tbl">
             <table>
@@ -30,15 +28,36 @@ export default function HomePage() {
               </thead>
               <tbody>
                 <tr><td><b>1 · Client</b></td><td>Web, mobile, admin, seller center</td><td>Giao diện cho từng nhóm người dùng</td></tr>
-                <tr><td><b>2 · Edge</b></td><td>GeoDNS, CDN, WAF, load balancer</td><td>Trả nội dung tĩnh, chặn bot, chia tải trước khi vào hệ thống</td></tr>
-                <tr><td><b>3 · Gateway</b></td><td>API Gateway / BFF, waiting room</td><td>Một cửa vào: xác thực, rate limit, routing; xếp hàng khi quá tải</td></tr>
+                <tr><td><b>2 · Edge</b></td><td>GeoDNS, CDN (Content Delivery Network, L7), WAF (Web Application Firewall, L7), waiting room</td><td>Trả nội dung tĩnh, chặn bot, xếp hàng người mua trước khi vào region</td></tr>
+                <tr><td><b>3 · Cửa vào cluster</b></td><td>NLB (Network Load Balancer, L4), Ingress (Nginx), Next.js, FE admin và seller, API Gateway / BFF</td><td>NLB chia kết nối TCP cho Ingress; Ingress đọc path rồi chia cho FE hoặc API; Gateway xác thực, rate limit, routing</td></tr>
                 <tr><td><b>4 · Service</b></td><td>user, catalog, cart, order, payment</td><td>Nghiệp vụ; stateless nên nhân bản theo tải</td></tr>
                 <tr><td><b>5 · Cache</b></td><td>Redis Cluster</td><td>Đọc nhanh, giữ giỏ hàng, trừ tồn kho flash sale</td></tr>
-                <tr><td><b>6 · Data</b></td><td>PgBouncer, DB riêng từng service, shard, replica</td><td>Lưu bền; chia ghi theo shard, chia đọc sang replica</td></tr>
+                <tr><td><b>6 · Data</b></td><td>PgBouncer, DB riêng từng service, shard, replica, S3</td><td>Lưu bền; chia ghi theo shard, chia đọc sang replica</td></tr>
                 <tr><td><b>7 · Messaging</b></td><td>Kafka</td><td>Chuyển sự kiện giữa service, giữ lại khi bên nhận chậm</td></tr>
                 <tr><td><b>8 · Worker</b></td><td>notification, search, inventory, shipping</td><td>Xử lý nền theo sự kiện, scale theo số partition</td></tr>
                 <tr><td><b>Xuyên suốt</b></td><td>Observability, CI/CD, config, secrets</td><td>Dùng cho mọi tầng</td></tr>
                 <tr><td><b>Bên ngoài</b></td><td>Cổng thanh toán, đơn vị vận chuyển</td><td>Dịch vụ của bên thứ ba, gọi qua API và webhook</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <h3>Một request đi qua mấy lớp chia tải</h3>
+          <p>Ví dụ request đặt hàng <code>POST shopbanhang.com/gateway/api/orders</code>. <b>L4</b> (Layer 4, tầng transport) chỉ chia kết nối TCP (Transmission Control Protocol, theo IP và port) nên rất nhanh; <b>L7</b> (Layer 7, tầng application) đọc HTTP (path, header) để quyết định đường đi. Chi tiết khác nhau giữa các loại ở trang <Link className="plink" href="/design/edge/">Reverse Proxy, API Gateway, Load Balancer</Link>. Địa chỉ ví dụ: giao diện ở <code>shopbanhang.com</code>, BFF ở <code>shopbanhang.com/gateway/api/...</code>, các service BE được BFF gọi nội bộ bằng gRPC (nếu BE mở REST thì ở <code>/api/v1/...</code>).</p>
+          <div className="tbl">
+            <table>
+              <thead>
+                <tr>
+                  <th>Lớp</th>
+                  <th>Loại</th>
+                  <th>Việc làm</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td><b>CDN, WAF</b></td><td>L7</td><td>Đường dẫn <code>/gateway/api</code> không cache; WAF kiểm request rồi cho qua. <code>/images</code> trả từ cache hoặc đọc thẳng S3, không vào cluster</td></tr>
+                <tr><td><b>NLB</b></td><td>L4</td><td>Một IP công khai, chọn 1 trong 3 pod Ingress</td></tr>
+                <tr><td><b>Ingress (Nginx)</b></td><td>L7</td><td>Giải mã HTTPS, đọc path <code>/gateway/api</code> rồi chuyển cho BFF (API Gateway)</td></tr>
+                <tr><td><b>Service api-gateway</b></td><td>L4</td><td>kube-proxy chọn 1 trong 50 pod Gateway</td></tr>
+                <tr><td><b>API Gateway</b></td><td>L7</td><td>Kiểm JWT (JSON Web Token), rate limit, gắn <code>X-User-Id</code>, gọi order-svc bằng gRPC (<code>OrderService.CreateOrder</code>)</td></tr>
+                <tr><td><b>Service order-svc</b></td><td>L4</td><td>Chọn 1 trong 200 pod order-svc. Với gRPC, kết nối dài nên cần chia tải phía client hoặc service mesh</td></tr>
               </tbody>
             </table>
           </div>
@@ -68,8 +87,8 @@ export default function HomePage() {
               </thead>
               <tbody>
                 <tr><td><b>2 · CDN</b></td><td>Cache ảnh, JS, trang sản phẩm dựng sẵn (SSG, ISR)</td><td>80–90% request không tới server</td></tr>
-                <tr><td><b>2 · DNS, load balancer</b></td><td>GeoDNS đưa user tới region gần nhất; WAF chặn bot</td><td>Chia tải nhiều region, loại request rác</td></tr>
-                <tr><td><b>3 · Waiting room</b></td><td>Lúc mở bán chỉ cho N người/giây vào checkout, còn lại xếp hàng</td><td>Backend chỉ nhận đúng sức chứa</td></tr>
+                <tr><td><b>2 · DNS, WAF, NLB</b></td><td>GeoDNS đưa user tới region gần nhất; WAF chặn bot; NLB (L4) chia kết nối cho các pod Ingress</td><td>Chia tải nhiều region, loại request rác, giữ một IP công khai</td></tr>
+                <tr><td><b>2 · Waiting room</b></td><td>Đặt ở edge: lúc mở bán chỉ cho N người/giây đi tiếp, còn lại xếp hàng</td><td>Chặn trước khi tới NLB, backend chỉ nhận đúng sức chứa</td></tr>
                 <tr><td><b>4 · Service</b></td><td>Stateless (session ở JWT hoặc Redis), Kubernetes HPA tự thêm pod</td><td>Thêm pod là tăng tải được ngay</td></tr>
                 <tr><td><b>5 · Cache</b></td><td>Redis Cluster giữ sản phẩm, giá, giỏ hàng; tồn kho flash sale trừ bằng <code>DECR</code></td><td>DB không bị đọc dồn; không bán quá số lượng</td></tr>
                 <tr><td><b>6 · Database</b></td><td>Read replica cho đọc, shard theo <code>customer_id</code> cho ghi, PgBouncer gom kết nối</td><td>Mỗi máy DB chỉ gánh một phần</td></tr>

@@ -50,6 +50,7 @@ import messagingCompare from "./messaging/compare";
 import messagingKafka from "./messaging/kafka";
 import messagingNats from "./messaging/nats";
 import messagingRabbitmq from "./messaging/rabbitmq";
+import messagingSqs from "./messaging/sqs";
 import operationsBuildLogger from "./operations/build-logger";
 import operationsLogging from "./operations/logging";
 import operationsObservability from "./operations/observability";
@@ -93,6 +94,7 @@ export const PAGES: Record<string, ComponentType> = {
   "messaging/kafka": messagingKafka,
   "messaging/nats": messagingNats,
   "messaging/rabbitmq": messagingRabbitmq,
+  "messaging/sqs": messagingSqs,
   "db/compare": dbCompare,
   "db/dynamodb": dbDynamodb,
   "db/mongodb": dbMongodb,

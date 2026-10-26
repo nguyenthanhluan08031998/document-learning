@@ -69,6 +69,7 @@ export const GROUPS: NotebookGroup[] = [
       { slug: "kafka", label: "Kafka" },
       { slug: "rabbitmq", label: "RabbitMQ" },
       { slug: "nats", label: "NATS" },
+      { slug: "sqs", label: "SQS" },
       { slug: "compare", label: "So sánh", labelEn: "Compare", aside: true },
     ],
   },
