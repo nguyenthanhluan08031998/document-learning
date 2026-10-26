@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="14" fill="#0f6e74"/>
+  <!-- notebook page with a binding strip -->
+  <rect x="14" y="10" width="38" height="44" rx="5" fill="#ffffff"/>
+  <rect x="14" y="10" width="9" height="44" rx="4" fill="#9ed6d8"/>
+  <!-- code brackets on the page -->
+  <path d="M33 25 L28 32 L33 39" fill="none" stroke="#0f6e74" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M43 25 L48 32 L43 39" fill="none" stroke="#0f6e74" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M40 24 L36 40" fill="none" stroke="#e8a21a" stroke-width="3.2" stroke-linecap="round"/>
+</svg>

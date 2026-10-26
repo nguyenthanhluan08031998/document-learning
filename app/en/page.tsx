@@ -3,7 +3,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { SystemDesignEn as SystemDesign } from "@/components/SystemDesign.en";
 
-export const metadata: Metadata = { title: { absolute: "Programming notebook" } };
+export const metadata: Metadata = { title: { absolute: "Coder" } };
 
 export default function HomePage() {
   return (

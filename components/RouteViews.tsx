@@ -8,9 +8,8 @@ import { AREAS, allRoutes, areaHint, findArea, findPage, groupLabel, pageLabel, 
 // Shared by the Vietnamese routes at the root and the English routes under /en
 const registry = (locale: Locale) => (locale === "en" ? PAGES_EN : PAGES);
 const NOT_FOUND = { vi: "Không tìm thấy", en: "Not found" };
-// The root layout's title template is Vietnamese, so English pages set an absolute title
-const title = (text: string, locale: Locale): Metadata["title"] =>
-  locale === "en" ? { absolute: `${text} · Programming notebook` } : text;
+// Every tab shows just the site name; the arguments are kept so callers stay unchanged
+const title = (_text: string, _locale: Locale): Metadata["title"] => ({ absolute: "Coder" });
 
 export const areaParams = () => AREAS.map(a => ({ group: a.id }));
 export const pageParams = () => allRoutes();

@@ -4,7 +4,7 @@ import "./notebook.css";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: { default: "Sổ tay lập trình", template: "%s · Sổ tay lập trình" },
+  title: { default: "Coder", template: "%s · Coder" },
   description: "Ghi chú học lập trình theo FE, BE, Database, CI/CD, Git: REST, GraphQL, gRPC, Kafka, RabbitMQ, NATS, design pattern, lock, logging.",
 };
 
