@@ -6,6 +6,12 @@ import dbMysql from "./db/mysql";
 import dbPostgresql from "./db/postgresql";
 import deployCicdEc2 from "./deploy/cicd-ec2";
 import deployDocker from "./deploy/docker";
+import interviewJsTs from "./interview/js-ts";
+import interviewNodejs from "./interview/nodejs";
+import interviewReact from "./interview/react";
+import interviewNestjs from "./interview/nestjs";
+import interviewNext from "./interview/next";
+import deployDockerInterview from "./deploy/docker-interview";
 import jsAsync from "./js/async";
 import jsCore from "./js/core";
 import jsToolbox from "./js/toolbox";
@@ -21,6 +27,9 @@ import golangHttpDb from "./golang/http-db";
 import golangSyncPatterns from "./golang/sync-patterns";
 import golangConcurrency from "./golang/concurrency";
 import golangDataStructures from "./golang/data-structures";
+import golangGrpc from "./golang/grpc";
+import golangStdlib from "./golang/stdlib";
+import golangTesting from "./golang/testing";
 import golangInterview from "./golang/interview";
 import golangMemory from "./golang/memory";
 import golangProduction from "./golang/production";
@@ -65,7 +74,10 @@ export const PAGES: Record<string, ComponentType> = {
   "golang/sync-patterns": golangSyncPatterns,
   "golang/concurrency": golangConcurrency,
   "golang/data-structures": golangDataStructures,
-  "golang/interview": golangInterview,
+  "golang/grpc": golangGrpc,
+  "golang/stdlib": golangStdlib,
+  "golang/testing": golangTesting,
+  "interview/go": golangInterview,
   "golang/memory": golangMemory,
   "golang/production": golangProduction,
   "golang/runtime": golangRuntime,
@@ -102,6 +114,12 @@ export const PAGES: Record<string, ComponentType> = {
   "db/postgresql": dbPostgresql,
   "deploy/cicd-ec2": deployCicdEc2,
   "deploy/docker": deployDocker,
+  "interview/docker": deployDockerInterview,
+  "interview/js-ts": interviewJsTs,
+  "interview/nodejs": interviewNodejs,
+  "interview/react": interviewReact,
+  "interview/nestjs": interviewNestjs,
+  "interview/next": interviewNext,
   "js/async": jsAsync,
   "js/core": jsCore,
   "js/toolbox": jsToolbox,

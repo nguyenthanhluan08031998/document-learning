@@ -2,7 +2,7 @@
 
 export type Locale = "vi" | "en";
 
-export type AreaId = "fe" | "be" | "database" | "cicd" | "git" | "ai" | "lang";
+export type AreaId = "fe" | "be" | "database" | "cicd" | "git" | "ai" | "lang" | "interview";
 
 export interface Area {
   id: AreaId;
@@ -20,9 +20,10 @@ export const AREAS: Area[] = [
   { id: "git", label: "Git", hint: "Quản lý mã nguồn", hintEn: "Source control" },
   { id: "ai", label: "AI", hint: "LLM, RAG, agent", hintEn: "LLM, RAG, agents" },
   { id: "lang", label: "Language", hint: "Ngôn ngữ lập trình", hintEn: "Programming languages" },
+  { id: "interview", label: "Phỏng vấn", hint: "Câu hỏi thường gặp", hintEn: "Interview" },
 ];
 
-export type GroupId = "api" | "messaging" | "design" | "concurrency" | "operations" | "deploy" | "git" | "db" | "ai" | "golang" | "js";
+export type GroupId = "api" | "messaging" | "design" | "concurrency" | "operations" | "deploy" | "git" | "db" | "ai" | "golang" | "js" | "interview";
 
 export interface NotebookPage {
   slug: string;
@@ -114,13 +115,15 @@ export const GROUPS: NotebookGroup[] = [
       { slug: "errors", label: "Lỗi & Interface", labelEn: "Errors & Interfaces" },
       { slug: "sync-patterns", label: "Concurrency thực hành", labelEn: "Concurrency in practice" },
       { slug: "http-db", label: "HTTP & Database", labelEn: "HTTP & Database" },
+      { slug: "testing", label: "Test", labelEn: "Testing" },
+      { slug: "stdlib", label: "Thư viện chuẩn", labelEn: "Standard library" },
+      { slug: "grpc", label: "gRPC trong Go", labelEn: "gRPC in Go" },
       { slug: "vs-nodejs", label: "Go vs Node.js" },
       { slug: "runtime", label: "Runtime & GMP" },
       { slug: "concurrency", label: "Channel & Context" },
       { slug: "memory", label: "Bộ nhớ & GC", labelEn: "Memory & GC" },
       { slug: "data-structures", label: "Slice, Map, Interface" },
       { slug: "production", label: "Production" },
-      { slug: "interview", label: "Phỏng vấn", labelEn: "Interview", aside: true },
     ],
   },
   {
@@ -145,6 +148,18 @@ export const GROUPS: NotebookGroup[] = [
       { slug: "mongodb", label: "MongoDB" },
       { slug: "dynamodb", label: "DynamoDB" },
       { slug: "compare", label: "So sánh", labelEn: "Compare", aside: true },
+    ],
+  },
+  {
+    id: "interview", area: "interview", label: "Phỏng vấn", hint: "js, react, next, node, nest, go, docker", labelEn: "Interview", hintEn: "js, react, next, node, nest, go, docker", tone: "ops",
+    pages: [
+      { slug: "js-ts", label: "JS / TS", labelEn: "JS / TS" },
+      { slug: "react", label: "React", labelEn: "React" },
+      { slug: "next", label: "Next.js", labelEn: "Next.js" },
+      { slug: "nodejs", label: "Node.js", labelEn: "Node.js" },
+      { slug: "nestjs", label: "NestJS", labelEn: "NestJS" },
+      { slug: "go", label: "Go", labelEn: "Go" },
+      { slug: "docker", label: "Docker", labelEn: "Docker" },
     ],
   },
   {
