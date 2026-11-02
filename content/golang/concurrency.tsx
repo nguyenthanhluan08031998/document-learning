@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Code } from "@/components/Code";
 import { CodeCompare } from "@/components/CodeCompare";
 import { Box, Label, Markers } from "@/components/Svg";
 
@@ -88,6 +89,48 @@ export default function GoConcurrencyPage() {
             <div><h4>Unbuffered <code>make(chan T)</code></h4>Không có buf. Send chỉ xong khi có receiver: nếu receiver đã chờ trong recvq, runtime <b>copy thẳng giá trị từ stack người gửi sang stack người nhận</b> rồi đánh thức nó. Đây là điểm đồng bộ (handoff): hai bên chắc chắn đã gặp nhau.</div>
             <div><h4>Buffered <code>make(chan T, n)</code></h4>Send copy vào <code>buf[sendx]</code> và trả về ngay nếu còn chỗ; chỉ chặn khi đầy. Receive lấy từ <code>buf[recvx]</code>. Nếu đang có receiver chờ thì vẫn copy thẳng như unbuffered. Buffer hấp thụ dao động tốc độ, không phải để “sửa” deadlock.</div>
           </div>
+          <h3>Ưu, nhược, khi nào dùng</h3>
+          <div className="tbl">
+            <table>
+              <thead><tr><th></th><th>Unbuffered</th><th>Buffered</th></tr></thead>
+              <tbody>
+                <tr><td><b>Ưu</b></td>
+                  <td>Đồng bộ chắc chắn: send xong nghĩa là bên kia đã nhận. Không có hàng đợi ẩn, không tốn bộ nhớ đệm, hành vi dễ đoán khi debug và test.</td>
+                  <td>Tách nhịp producer và consumer, hấp thụ đợt tăng tải. Ít lần park và đánh thức G hơn nên thường thông lượng tốt hơn. Khi đầy thì bên gửi bị chặn, tạo backpressure.</td></tr>
+                <tr><td><b>Nhược</b></td>
+                  <td>Bên gửi bị chặn tới khi có người nhận: hai bên dính chặt, tốc độ bằng bên chậm hơn. Quên receiver là deadlock hoặc goroutine leak.</td>
+                  <td>Send xong chưa chắc đã có ai xử lý; tiến trình chết thì dữ liệu trong buffer mất. Tốn bộ nhớ cap × kích thước phần tử. Dễ che giấu lỗi thiết kế, hàng đợi dài làm tăng độ trễ, và con số cap thường chọn tuỳ ý.</td></tr>
+                <tr><td><b>Dùng khi</b></td>
+                  <td>Cần chắc chắn bên kia đã nhận (handoff, ack). Tín hiệu done hoặc huỷ (<code>chan struct&#123;&#125;</code>). Pipeline chạy từng bước đồng bộ.</td>
+                  <td>Hàng đợi việc cho worker pool. Gom kết quả khi biết trước số lượng n (cap = n để worker không kẹt). Semaphore giới hạn đồng thời (cap = số lượng tối đa). Cap = 1 để goroutine chỉ gửi một lần không bị leak khi không còn ai nhận.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div className="note tip">Mặc định hãy bắt đầu bằng <b>unbuffered</b>. Chỉ thêm buffer khi có lý do cụ thể và nêu được vì sao đúng con số đó. Buffer lớn để “cho hết deadlock” chỉ dời lỗi đi chỗ khác.</div>
+          <div className="note">Theo <a href="https://go.dev/ref/mem" target="_blank" rel="noreferrer">Go memory model</a>: với <b>unbuffered</b>, receive đồng bộ-trước khi send tương ứng hoàn tất, nên send xong là biết bên kia đã nhận. Với <b>buffered</b> chỉ có chiều “send đồng bộ-trước receive tương ứng”, nên send xong chưa nói được gì về việc đã xử lý.</div>
+          <Code lang="go">{`// Unbuffered: bắt tay + tín hiệu. done chỉ được close khi worker làm xong.
+done := make(chan struct{})
+go func() {
+    defer close(done)
+    process(job)
+}()
+<-done // chặn cho tới khi worker xong
+
+// Buffered: hàng đợi việc, đợt tăng tải ngắn không làm chậm producer; đầy thì chặn
+jobs := make(chan Job, 100)
+for i := 0; i < 4; i++ {
+    go func() { for j := range jobs { process(j) } }()
+}
+jobs <- job // trả về ngay khi còn chỗ
+
+// Buffered, cap = 1: bên gửi không bị leak dù bên nhận đã bỏ đi
+ch := make(chan Result, 1)
+go func() { ch <- slowCall() }()
+
+// Buffered làm semaphore: tối đa 3 việc chạy cùng lúc
+sem := make(chan struct{}, 3)
+sem <- struct{}{}        // lấy slot
+defer func() { <-sem }() // trả slot`}</Code>
         </section>
 
         <section id="gc-rules">
@@ -111,6 +154,26 @@ export default function GoConcurrencyPage() {
             <div><h4>Channel</h4>Chuyển quyền sở hữu dữ liệu giữa các goroutine (pipeline, worker pool), phát tín hiệu xong/huỷ, giới hạn số việc chạy cùng lúc (semaphore), kết hợp nhiều nguồn sự kiện bằng <code>select</code>.</div>
             <div><h4>sync.Mutex · RWMutex · atomic</h4>Bảo vệ một trạng thái dùng chung (cache, counter, map). Ngắn, nhanh và dễ đọc hơn dùng channel. RWMutex khi đọc nhiều hơn ghi rất nhiều; với counter đơn giản dùng <code>atomic.Int64</code>.</div>
           </div>
+          <div className="tbl">
+            <table>
+              <thead><tr><th></th><th>Channel</th><th>Mutex (Mutex, RWMutex)</th><th>atomic</th></tr></thead>
+              <tbody>
+                <tr><td><b>Ưu</b></td>
+                  <td>Diễn tả được luồng dữ liệu và quyền sở hữu. Ghép được với <code>select</code>, timeout, <code>context</code>. Không cần nghĩ tới khoá.</td>
+                  <td>Đơn giản, ngắn gọn cho trạng thái dùng chung. Thường nhanh hơn channel cho vùng găng ngắn. RWMutex cho phép nhiều reader cùng lúc.</td>
+                  <td>Nhanh nhất cho một giá trị đơn lẻ (counter, cờ). Không cần khoá.</td></tr>
+                <tr><td><b>Nhược</b></td>
+                  <td>Nhiều code hơn, chậm hơn cho việc bảo vệ state đơn giản. Dễ deadlock hoặc leak, phải nhớ luật close.</td>
+                  <td>Quên Unlock hoặc khoá sai thứ tự thì deadlock. Giữ khoá khi gọi I/O (Input/Output) chậm sẽ chặn mọi người khác. Không thể select hay timeout khi chờ khoá. Không copy struct chứa Mutex.</td>
+                  <td>Chỉ bảo vệ một từ nhớ; không giữ được bất biến giữa nhiều trường.</td></tr>
+                <tr><td><b>Dùng khi</b></td>
+                  <td>Chuyển dữ liệu hoặc việc giữa các goroutine, worker pool, pipeline, tín hiệu xong hoặc huỷ, chờ nhiều nguồn, giới hạn đồng thời.</td>
+                  <td>Bảo vệ cache, map, struct dùng chung. RWMutex khi đọc nhiều hơn ghi rất nhiều và phần đọc không quá ngắn.</td>
+                  <td>Counter, cờ bật tắt, số liệu đo.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div className="note tip">Quy tắc nhanh (<a href="https://go.dev/wiki/MutexOrChannel" target="_blank" rel="noreferrer">Go wiki</a>): channel hợp với việc <b>chuyển quyền sở hữu dữ liệu, chia việc, trả kết quả bất đồng bộ</b>; mutex hợp với việc <b>bảo vệ cache và trạng thái dùng chung</b>. Chọn cái nào đơn giản và dễ diễn đạt hơn. Nếu luật khoá trở nên phức tạp, hãy cân nhắc channel; đừng lạm dụng channel chỉ vì có sẵn.</div>
           <CodeCompare go={`type Counter struct {
     mu sync.Mutex
     m  map[string]int

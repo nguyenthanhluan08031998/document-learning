@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Code } from "@/components/Code";
 import { CodeCompare } from "@/components/CodeCompare";
 import { Box, Label, Markers } from "@/components/Svg";
 
@@ -88,6 +89,48 @@ export default function GoConcurrencyPage() {
             <div><h4>Unbuffered <code>make(chan T)</code></h4>No buf. A send completes only when a receiver is there: if one is already waiting in recvq, the runtime <b>copies the value straight from the sender&apos;s stack to the receiver&apos;s stack</b> and wakes it. It is a synchronisation point (handoff): both sides have definitely met.</div>
             <div><h4>Buffered <code>make(chan T, n)</code></h4>A send copies into <code>buf[sendx]</code> and returns at once if there is room; it blocks only when full. A receive takes from <code>buf[recvx]</code>. If a receiver is already waiting, the value is still copied directly. The buffer absorbs speed differences; it does not “fix” deadlocks.</div>
           </div>
+          <h3>Pros, cons, when to use</h3>
+          <div className="tbl">
+            <table>
+              <thead><tr><th></th><th>Unbuffered</th><th>Buffered</th></tr></thead>
+              <tbody>
+                <tr><td><b>Pros</b></td>
+                  <td>Strong synchronisation: when a send returns, the other side has received. No hidden queue, no buffer memory, predictable behaviour when debugging and testing.</td>
+                  <td>Decouples producer and consumer and absorbs bursts. Fewer parks and wake-ups of Gs, so throughput is usually better. When full, the sender blocks, which gives backpressure.</td></tr>
+                <tr><td><b>Cons</b></td>
+                  <td>The sender blocks until someone receives: the two sides are tightly coupled and run at the speed of the slower one. A missing receiver means deadlock or a goroutine leak.</td>
+                  <td>A returned send does not mean anyone has processed the value; if the process dies, buffered data is lost. Costs cap × element size in memory. Can hide design bugs, a long queue adds latency, and the cap is often picked arbitrarily.</td></tr>
+                <tr><td><b>Use when</b></td>
+                  <td>You need certainty the other side received (handoff, ack). Done or cancel signals (<code>chan struct&#123;&#125;</code>). Pipelines that run step by step in lock-step.</td>
+                  <td>Job queue for a worker pool. Collecting results when the count n is known (cap = n so workers never get stuck). Semaphore to limit concurrency (cap = max). Cap = 1 so a send-once goroutine does not leak when nobody receives any more.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div className="note tip">Start with <b>unbuffered</b> by default. Add a buffer only for a concrete reason and be able to say why that exact size. A big buffer added “to make the deadlock go away” only moves the bug elsewhere.</div>
+          <div className="note">Per the <a href="https://go.dev/ref/mem" target="_blank" rel="noreferrer">Go memory model</a>: for <b>unbuffered</b>, a receive is synchronized before the corresponding send completes, so once the send returns you know the other side received. For <b>buffered</b> only “a send is synchronized before the corresponding receive completes” holds, so a returned send says nothing about whether the value was processed.</div>
+          <Code lang="go">{`// Unbuffered: handoff + signal. done is closed only when the worker finished.
+done := make(chan struct{})
+go func() {
+    defer close(done)
+    process(job)
+}()
+<-done // blocks until the worker is finished
+
+// Buffered: job queue, a short burst does not slow the producer; blocks when full
+jobs := make(chan Job, 100)
+for i := 0; i < 4; i++ {
+    go func() { for j := range jobs { process(j) } }()
+}
+jobs <- job // returns at once while there is room
+
+// Buffered, cap = 1: the sender never leaks even if the receiver gave up
+ch := make(chan Result, 1)
+go func() { ch <- slowCall() }()
+
+// Buffered as a semaphore: at most 3 run at once
+sem := make(chan struct{}, 3)
+sem <- struct{}{}        // acquire
+defer func() { <-sem }() // release`}</Code>
         </section>
 
         <section id="gc-rules">
@@ -111,6 +154,26 @@ export default function GoConcurrencyPage() {
             <div><h4>Channel</h4>Hand ownership of data between goroutines (pipelines, worker pools), signal done/cancel, limit how much runs at once (semaphore), combine several event sources with <code>select</code>.</div>
             <div><h4>sync.Mutex · RWMutex · atomic</h4>Protect shared state (cache, counter, map). Shorter, faster and easier to read than a channel. RWMutex when reads vastly outnumber writes; for a simple counter use <code>atomic.Int64</code>.</div>
           </div>
+          <div className="tbl">
+            <table>
+              <thead><tr><th></th><th>Channel</th><th>Mutex (Mutex, RWMutex)</th><th>atomic</th></tr></thead>
+              <tbody>
+                <tr><td><b>Pros</b></td>
+                  <td>Expresses data flow and ownership. Composes with <code>select</code>, timeouts and <code>context</code>. No locks to reason about.</td>
+                  <td>Simple and short for shared state. Usually faster than a channel for a short critical section. RWMutex lets many readers run at once.</td>
+                  <td>Fastest for a single value (counter, flag). No lock needed.</td></tr>
+                <tr><td><b>Cons</b></td>
+                  <td>More code, slower for guarding simple state. Easy to deadlock or leak, and you must remember the close rules.</td>
+                  <td>Forgetting Unlock or locking in the wrong order deadlocks. Holding the lock during slow I/O (Input/Output) blocks everyone else. You cannot select or time out while waiting for a lock. Never copy a struct holding a Mutex.</td>
+                  <td>Protects a single word only; it cannot keep an invariant across several fields.</td></tr>
+                <tr><td><b>Use when</b></td>
+                  <td>Handing data or work between goroutines, worker pools, pipelines, done or cancel signals, waiting on several sources, limiting concurrency.</td>
+                  <td>Protecting a cache, map or shared struct. RWMutex when reads vastly outnumber writes and the read section is not tiny.</td>
+                  <td>Counters, on/off flags, metrics.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div className="note tip">Rule of thumb (<a href="https://go.dev/wiki/MutexOrChannel" target="_blank" rel="noreferrer">Go wiki</a>): channels suit <b>passing data ownership, distributing work and returning async results</b>; mutexes suit <b>protecting caches and shared state</b>. Pick whichever is simpler and more expressive. If your locking rules get complicated, consider a channel; do not overuse channels just because they are there.</div>
           <CodeCompare go={`type Counter struct {
     mu sync.Mutex
     m  map[string]int
