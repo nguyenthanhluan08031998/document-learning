@@ -126,6 +126,42 @@ export default function ComparePage() {
           <div className="note tip">Một hệ thống hay dùng cả ba: REST hoặc GraphQL hướng ra ngoài, gRPC giữa các service bên trong. Xem sơ đồ ở trang Tổng quan.</div>
         </section>
         <section>
+          <h2>Ba kiểu bổ sung: WebSockets, Webhooks, MCP</h2>
+          <div className="tbl">
+            <table>
+              <thead>
+                <tr>
+                  <th>Kiểu</th>
+                  <th>Hướng</th>
+                  <th>Dùng khi</th>
+                  <th>Điểm cần cẩn thận</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><b>WebSockets</b></td>
+                  <td>Hai chiều, kết nối bền</td>
+                  <td>Voice, live AI, chat, đồng bộ trực tiếp</td>
+                  <td>Stateful, khó scale, tự reconnect</td>
+                </tr>
+                <tr>
+                  <td><b>Webhooks</b></td>
+                  <td>Server gọi ngược về bạn</td>
+                  <td>Job chạy lâu báo hoàn tất</td>
+                  <td>Trùng lặp, sai thứ tự, cần kiểm chữ ký</td>
+                </tr>
+                <tr>
+                  <td><b>MCP</b></td>
+                  <td>Agent gọi tool qua JSON-RPC</td>
+                  <td>LLM tự khám phá và dùng công cụ</td>
+                  <td>Đầy context window, spec đổi nhanh, OAuth</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div className="note tip">Chọn theo kích thước payload, tính năng, ngân sách độ trễ và mức tự chủ của agent. Xem trang riêng của từng kiểu để thấy luồng chạy động.</div>
+        </section>
+        <section>
           <h2>Đồng bộ hay bất đồng bộ?</h2>
           <div className="tbl">
             <table>

@@ -40,6 +40,9 @@ import apiCompare from "./api/compare";
 import apiGraphql from "./api/graphql";
 import apiGrpc from "./api/grpc";
 import apiRest from "./api/rest";
+import apiWebsockets from "./api/websockets";
+import apiWebhooks from "./api/webhooks";
+import apiMcp from "./api/mcp";
 import concurrencyCompare from "./concurrency/compare";
 import concurrencyDbLock from "./concurrency/db-lock";
 import concurrencyDistributedLock from "./concurrency/distributed-lock";
@@ -87,6 +90,9 @@ export const PAGES: Record<string, ComponentType> = {
   "api/graphql": apiGraphql,
   "api/grpc": apiGrpc,
   "api/rest": apiRest,
+  "api/websockets": apiWebsockets,
+  "api/webhooks": apiWebhooks,
+  "api/mcp": apiMcp,
   "concurrency/compare": concurrencyCompare,
   "concurrency/db-lock": concurrencyDbLock,
   "concurrency/distributed-lock": concurrencyDistributedLock,

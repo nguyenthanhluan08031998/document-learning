@@ -126,6 +126,42 @@ export default function ComparePage() {
           <div className="note tip">Many systems use all three: REST or GraphQL facing outward, gRPC between services inside. See the diagram on the Overview page.</div>
         </section>
         <section>
+          <h2>Three more styles: WebSockets, Webhooks, MCP</h2>
+          <div className="tbl">
+            <table>
+              <thead>
+                <tr>
+                  <th>Style</th>
+                  <th>Direction</th>
+                  <th>Use when</th>
+                  <th>Watch out for</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><b>WebSockets</b></td>
+                  <td>Two-way, persistent connection</td>
+                  <td>Voice, live AI, chat, live sync</td>
+                  <td>Stateful, hard to scale, reconnect yourself</td>
+                </tr>
+                <tr>
+                  <td><b>Webhooks</b></td>
+                  <td>Server calls you back</td>
+                  <td>Long jobs reporting completion</td>
+                  <td>Duplicates, reordering, verify signatures</td>
+                </tr>
+                <tr>
+                  <td><b>MCP</b></td>
+                  <td>Agent calls tools over JSON-RPC</td>
+                  <td>An LLM discovering and using tools</td>
+                  <td>Context window bloat, fast-moving spec, OAuth</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div className="note tip">Choose by payload size, features, latency budget and agent autonomy. See each style's own page for the animated flow.</div>
+        </section>
+        <section>
           <h2>Synchronous or asynchronous?</h2>
           <div className="tbl">
             <table>
