@@ -7,8 +7,8 @@ export interface Sample { lang: string; src: string }
 
 export interface Item {
   q: string;
-  /** Short answer */
-  a: string;
+  /** Answer: one string, or several paragraphs */
+  a: string | string[];
   /** Optional diagram, e.g. <Flow/> */
   diagram?: ReactNode;
   /** Optional worked example(s) */
@@ -58,7 +58,7 @@ export function InterviewList({ locale, eyebrow, title, lede, items }: { locale:
                     </span>
                   </summary>
                   <div className="qa-body">
-                    <p>{it.a}</p>
+                    {(Array.isArray(it.a) ? it.a : [it.a]).map((p) => <p key={p}>{p}</p>)}
                     {it.diagram}
                     {samples.length > 0 && <div className="qa-label">{t.exTitle}</div>}
                     {samples.map((s, k) => <Code key={k} lang={s.lang}>{s.src}</Code>)}
