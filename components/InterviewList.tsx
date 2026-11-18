@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Code } from "@/components/Code";
 import { ExpandAll } from "@/components/ExpandAll";
+import { InterviewGate } from "@/components/InterviewGate";
 import type { Locale } from "@/lib/notebook";
 
 export interface Sample { lang: string; src: string }
@@ -27,6 +28,7 @@ const T = {
 export function InterviewList({ locale, eyebrow, title, lede, items }: { locale: Locale } & InterviewData) {
   const t = T[locale];
   return (
+    <InterviewGate locale={locale}>
     <div className="wrap">
       <nav className="toc" aria-label={title}>
         <div className="label">{t.toc}</div>
@@ -71,5 +73,6 @@ export function InterviewList({ locale, eyebrow, title, lede, items }: { locale:
         </section>
       </main>
     </div>
+    </InterviewGate>
   );
 }

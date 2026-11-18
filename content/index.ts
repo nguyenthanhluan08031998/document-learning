@@ -11,6 +11,12 @@ import interviewNodejs from "./interview/nodejs";
 import interviewReact from "./interview/react";
 import interviewNestjs from "./interview/nestjs";
 import interviewNext from "./interview/next";
+import interviewDatabase from "./interview/database";
+import interviewCicd from "./interview/cicd";
+import interviewSolid from "./interview/solid";
+import interviewAi from "./interview/ai";
+import interviewHttpStatus from "./interview/http-status";
+import interviewWebSecurity from "./interview/web-security";
 import deployDockerInterview from "./deploy/docker-interview";
 import jsAsync from "./js/async";
 import jsCore from "./js/core";
@@ -80,7 +86,7 @@ export const PAGES: Record<string, ComponentType> = {
   "golang/grpc": golangGrpc,
   "golang/stdlib": golangStdlib,
   "golang/testing": golangTesting,
-  "interview/go": golangInterview,
+  "interview-be/go": golangInterview,
   "golang/memory": golangMemory,
   "golang/production": golangProduction,
   "golang/runtime": golangRuntime,
@@ -120,12 +126,18 @@ export const PAGES: Record<string, ComponentType> = {
   "db/postgresql": dbPostgresql,
   "deploy/cicd-ec2": deployCicdEc2,
   "deploy/docker": deployDocker,
-  "interview/docker": deployDockerInterview,
-  "interview/js-ts": interviewJsTs,
-  "interview/nodejs": interviewNodejs,
-  "interview/react": interviewReact,
-  "interview/nestjs": interviewNestjs,
-  "interview/next": interviewNext,
+  "interview-db/database": interviewDatabase,
+  "interview-cicd/cicd": interviewCicd,
+  "interview-be/solid": interviewSolid,
+  "interview-ai/llm": interviewAi,
+  "interview-be/http-status": interviewHttpStatus,
+  "interview-be/web-security": interviewWebSecurity,
+  "interview-docker/docker": deployDockerInterview,
+  "interview-fe/js-ts": interviewJsTs,
+  "interview-be/nodejs": interviewNodejs,
+  "interview-fe/react": interviewReact,
+  "interview-be/nestjs": interviewNestjs,
+  "interview-fe/next": interviewNext,
   "js/async": jsAsync,
   "js/core": jsCore,
   "js/toolbox": jsToolbox,

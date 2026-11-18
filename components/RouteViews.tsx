@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { GroupCards } from "@/components/AreaCards";
+import { InterviewGate } from "@/components/InterviewGate";
 import { PAGES } from "@/content";
 import { PAGES as PAGES_EN } from "@/content/en";
 import { AREAS, allRoutes, areaHint, findArea, findPage, groupLabel, pageLabel, type Locale } from "@/lib/notebook";
@@ -32,7 +33,7 @@ export function AreaView({ id, locale }: { id: string; locale: Locale }) {
   const Overview = registry(locale)[area.id];
   if (Overview) return <Overview />;
 
-  return (
+  const view = (
     <div className="wrap single">
       <main>
         <header className="hero">
@@ -45,6 +46,7 @@ export function AreaView({ id, locale }: { id: string; locale: Locale }) {
       </main>
     </div>
   );
+  return area.id === "interview" ? <InterviewGate locale={locale}>{view}</InterviewGate> : view;
 }
 
 export function PageView({ group, slug, locale }: { group: string; slug: string; locale: Locale }) {

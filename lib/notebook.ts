@@ -23,7 +23,8 @@ export const AREAS: Area[] = [
   { id: "interview", label: "Phỏng vấn", hint: "Câu hỏi thường gặp", hintEn: "Interview" },
 ];
 
-export type GroupId = "api" | "messaging" | "design" | "concurrency" | "operations" | "deploy" | "git" | "db" | "ai" | "golang" | "js" | "interview";
+export type GroupId = "api" | "messaging" | "design" | "concurrency" | "operations" | "deploy" | "git" | "db" | "ai" | "golang" | "js"
+  | "interview-fe" | "interview-be" | "interview-db" | "interview-cicd" | "interview-docker" | "interview-ai";
 
 export interface NotebookPage {
   slug: string;
@@ -154,15 +155,46 @@ export const GROUPS: NotebookGroup[] = [
     ],
   },
   {
-    id: "interview", area: "interview", label: "Phỏng vấn", hint: "js, react, next, node, nest, go, docker", labelEn: "Interview", hintEn: "js, react, next, node, nest, go, docker", tone: "ops",
+    id: "interview-fe", area: "interview", label: "Frontend", hint: "js, react, next", labelEn: "Frontend", hintEn: "js, react, next", tone: "js",
     pages: [
-      { slug: "js-ts", label: "JS / TS", labelEn: "JS / TS" },
-      { slug: "react", label: "React", labelEn: "React" },
-      { slug: "next", label: "Next.js", labelEn: "Next.js" },
-      { slug: "nodejs", label: "Node.js", labelEn: "Node.js" },
-      { slug: "nestjs", label: "NestJS", labelEn: "NestJS" },
-      { slug: "go", label: "Go", labelEn: "Go" },
-      { slug: "docker", label: "Docker", labelEn: "Docker" },
+      { slug: "js-ts", label: "JS / TS" },
+      { slug: "react", label: "React" },
+      { slug: "next", label: "Next.js" },
+    ],
+  },
+  {
+    id: "interview-be", area: "interview", label: "Backend", hint: "node, nest, go, solid, http, bảo mật", labelEn: "Backend", hintEn: "node, nest, go, solid, http, security", tone: "api",
+    pages: [
+      { slug: "nodejs", label: "Node.js" },
+      { slug: "nestjs", label: "NestJS" },
+      { slug: "go", label: "Go" },
+      { slug: "solid", label: "OOP & SOLID" },
+      { slug: "http-status", label: "HTTP status code" },
+      { slug: "web-security", label: "XSS, CSRF, CORS" },
+    ],
+  },
+  {
+    id: "interview-db", area: "interview", label: "Database", hint: "sql, index, transaction", labelEn: "Database", hintEn: "sql, index, transactions", tone: "db",
+    pages: [
+      { slug: "database", label: "Database" },
+    ],
+  },
+  {
+    id: "interview-cicd", area: "interview", label: "CI/CD", hint: "pipeline, deploy", labelEn: "CI/CD", hintEn: "pipeline, deploy", tone: "deploy",
+    pages: [
+      { slug: "cicd", label: "CI/CD" },
+    ],
+  },
+  {
+    id: "interview-docker", area: "interview", label: "Docker", hint: "image, container", labelEn: "Docker", hintEn: "image, container", tone: "ops",
+    pages: [
+      { slug: "docker", label: "Docker" },
+    ],
+  },
+  {
+    id: "interview-ai", area: "interview", label: "AI", hint: "dùng AI khi code", labelEn: "AI", hintEn: "AI for developers", tone: "ai",
+    pages: [
+      { slug: "llm", label: "AI cho developer", labelEn: "AI for developers" },
     ],
   },
   {

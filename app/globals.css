@@ -109,3 +109,21 @@ p, .lede { max-width: none; }
 .lang-switch a[aria-current] { background: var(--accent-soft); color: var(--accent); }
 .lang-switch a:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 @media (max-width: 600px) { .bar1-right { width: 100%; } .bar1-right .groups-nav { flex: 1; min-width: 0; } }
+
+/* Login gate in front of the interview pages */
+.iv-login { max-width: 380px; margin: 48px auto; padding: 28px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; display: grid; gap: 14px; }
+.iv-login h1 { font-size: 20px; margin: 0 0 4px; }
+.iv-login label { display: grid; gap: 6px; font-size: 13.5px; font-weight: 600; color: var(--muted); }
+.iv-login input { font: inherit; font-weight: 400; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 9px 12px; }
+.iv-login input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; border-color: var(--accent); }
+.iv-login button { font: inherit; font-weight: 700; color: var(--bg); background: var(--accent); border: none; border-radius: 8px; padding: 10px 14px; cursor: pointer; }
+.iv-login button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.iv-error { margin: 0; color: var(--bad); font-size: 13.5px; }
+.iv-hint { margin: -6px 0 4px; color: var(--muted); font-size: 13.5px; }
+.iv-actions { display: flex; gap: 8px; justify-content: flex-end; }
+.iv-login button.ghost { color: var(--ink); background: none; border: 1px solid var(--line); }
+.login-btn { font: inherit; font-size: 12.5px; font-weight: 700; padding: 6px 12px; color: var(--accent); background: var(--accent-soft); border: 1px solid var(--line); border-radius: 8px; cursor: pointer; }
+.login-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.login-dialog { padding: 0; border: none; background: none; width: min(380px, calc(100vw - 32px)); }
+.login-dialog::backdrop { background: rgba(0, 0, 0, .45); }
+.login-dialog .iv-login { margin: 0; }

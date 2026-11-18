@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { PAGES } from "@/content";
+import { UnlockedOnly } from "@/components/InterviewGate";
 import {
   AREAS, areaHint, areaHref, groupHint, groupLabel, groupsOf, pageHref, pageLabel, type AreaId, type Locale,
 } from "@/lib/notebook";
@@ -18,7 +19,7 @@ export function AreaCards({ locale = "vi" }: { locale?: Locale }) {
     <div className="groups">
       {AREAS.map(a => {
         const groups = groupsOf(a.id);
-        return (
+        const card = (
           <div key={a.id} className="group">
             <div className="g-head">
               <span className="g-tag">{areaHint(a, locale)}</span>
@@ -42,6 +43,8 @@ export function AreaCards({ locale = "vi" }: { locale?: Locale }) {
             ) : <Empty locale={locale} />}
           </div>
         );
+        // The interview card appears only after login
+        return a.id === "interview" ? <UnlockedOnly key={a.id}>{card}</UnlockedOnly> : card;
       })}
     </div>
   );

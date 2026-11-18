@@ -7,6 +7,8 @@ import {
   AREAS, GROUPS, areaHref, findArea, groupHint, groupLabel, groupsOf, homeHref, localeOf, pageHref, pageLabel, switchLocale,
   type GroupId,
 } from "@/lib/notebook";
+import { LoginButton } from "@/components/InterviewGate";
+import { useUnlocked } from "@/lib/unlock";
 
 const STORAGE_KEY = "notebook-last-page";
 
@@ -40,7 +42,11 @@ export function NotebookHeader() {
     setLast(stored);
   }, [activeGroup, slugSeg, locale]);
 
-  const areaGroups = activeArea ? groupsOf(activeArea.id) : [];
+  // The interview area stays hidden until the visitor logs in
+  const unlocked = useUnlocked();
+  const visibleAreas = AREAS.filter(a => a.id !== "interview" || unlocked);
+  const hideActive = activeArea?.id === "interview" && !unlocked;
+  const areaGroups = activeArea && !hideActive ? groupsOf(activeArea.id) : [];
 
   return (
     <header className="appbar">
@@ -54,12 +60,13 @@ export function NotebookHeader() {
               <Link href={homeHref(locale)} aria-current={!activeArea ? "page" : undefined} data-pressed={!activeArea}>
                 {t.overview}
               </Link>
-              {AREAS.map(a => (
+              {visibleAreas.map(a => (
                 <Link key={a.id} href={areaHref(a.id, locale)} data-pressed={activeArea?.id === a.id}>
                   {a.label}
                 </Link>
               ))}
             </nav>
+            <LoginButton locale={locale} />
             <nav className="lang-switch" aria-label={t.language}>
               <Link href={switchLocale(pathname, "vi")} hrefLang="vi" aria-current={locale === "vi" ? "true" : undefined}>VI</Link>
               <Link href={switchLocale(pathname, "en")} hrefLang="en" aria-current={locale === "en" ? "true" : undefined}>EN</Link>
@@ -82,7 +89,7 @@ export function NotebookHeader() {
             ))}
           </nav>
         )}
-        {activeGroup && (
+        {activeGroup && !hideActive && (
           <nav className="subnav" data-group={activeGroup.tone} aria-label={`${t.notebook} ${groupLabel(activeGroup, locale)}`}>
             {activeGroup.pages.map(p => (
               <Link
