@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { NotebookHeader } from "@/components/NotebookHeader";
+import { Shell } from "@/components/SiteNav";
 import "./notebook.css";
 import "./globals.css";
 
@@ -25,7 +26,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body suppressHydrationWarning>
         <NotebookHeader />
-        {children}
+        <Shell>{children}</Shell>
       </body>
     </html>
   );

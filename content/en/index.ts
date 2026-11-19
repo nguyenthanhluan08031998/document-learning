@@ -14,8 +14,10 @@ import interviewNext from "./interview/next";
 import interviewDatabase from "./interview/database";
 import interviewCicd from "./interview/cicd";
 import interviewSolid from "./interview/solid";
+import interviewDesignPatterns from "./interview/design-patterns";
 import interviewAi from "./interview/ai";
 import interviewHttpStatus from "./interview/http-status";
+import interviewBrowserFlow from "./interview/browser-flow";
 import interviewWebSecurity from "./interview/web-security";
 import deployDockerInterview from "./deploy/docker-interview";
 import jsAsync from "./js/async";
@@ -53,6 +55,7 @@ import concurrencyCompare from "./concurrency/compare";
 import concurrencyDbLock from "./concurrency/db-lock";
 import concurrencyDistributedLock from "./concurrency/distributed-lock";
 import concurrencyOverview from "./concurrency/overview";
+import concurrencyOsThread from "./concurrency/os-thread";
 import designBehavioral from "./design/behavioral";
 import designCheatSheet from "./design/cheat-sheet";
 import designCleanArchitecture from "./design/clean-architecture";
@@ -103,6 +106,7 @@ export const PAGES: Record<string, ComponentType> = {
   "concurrency/db-lock": concurrencyDbLock,
   "concurrency/distributed-lock": concurrencyDistributedLock,
   "concurrency/overview": concurrencyOverview,
+  "concurrency/os-thread": concurrencyOsThread,
   "design/behavioral": designBehavioral,
   "design/cheat-sheet": designCheatSheet,
   "design/clean-architecture": designCleanArchitecture,
@@ -127,12 +131,14 @@ export const PAGES: Record<string, ComponentType> = {
   "deploy/cicd-ec2": deployCicdEc2,
   "deploy/docker": deployDocker,
   "interview-db/database": interviewDatabase,
-  "interview-cicd/cicd": interviewCicd,
+  "interview-devops/cicd": interviewCicd,
   "interview-be/solid": interviewSolid,
+  "interview-be/design-patterns": interviewDesignPatterns,
   "interview-ai/llm": interviewAi,
   "interview-be/http-status": interviewHttpStatus,
-  "interview-be/web-security": interviewWebSecurity,
-  "interview-docker/docker": deployDockerInterview,
+  "interview-be/browser-flow": interviewBrowserFlow,
+  "interview-fe/web-security": interviewWebSecurity,
+  "interview-devops/docker": deployDockerInterview,
   "interview-fe/js-ts": interviewJsTs,
   "interview-be/nodejs": interviewNodejs,
   "interview-fe/react": interviewReact,

@@ -12,7 +12,8 @@ export default function PrinciplesPage() {
           <li><a href="#pr-lsp"><span>04</span>L · Liskov Substitution</a></li>
           <li><a href="#pr-isp"><span>05</span>I · Interface Segregation</a></li>
           <li><a href="#pr-dip"><span>06</span>D · Dependency Inversion</a></li>
-          <li><a href="#pr-more"><span>07</span>Nguyên tắc khác</a></li>
+          <li><a href="#pr-refactor"><span>07</span>Refactor từng bước</a></li>
+          <li><a href="#pr-more"><span>08</span>Nguyên tắc khác</a></li>
         </ol>
       </nav>
       <main>
@@ -129,8 +130,179 @@ class PlaceOrder {
 class StripePayment implements PaymentPort { async charge() { return "ch_123"; } }
 const useCase = new PlaceOrder(new StripePayment());`}</Code>
         </section>
+        <section id="pr-refactor">
+          <h2><span className="n">07</span>Refactor từng bước: OrderService</h2>
+          <p>Áp cả 5 nguyên tắc lên <b>một</b> đoạn code thật để thấy chúng bổ trợ nhau thế nào. Điểm xuất phát là một service thanh toán đơn hàng viết kiểu “chạy được là được”.</p>
+          <h3>Code ban đầu</h3>
+          <Code lang="ts">{`class OrderService {
+  async checkout(order: Order, paymentType: string) {
+    // 1. validate
+    if (order.items.length === 0) throw new Error("Empty order");
+
+    // 2. price + discount
+    let total = order.items.reduce((s, i) => s + i.price * i.qty, 0);
+    if (order.coupon === "SALE10") total *= 0.9;
+
+    // 3. payment: a new provider means another else-if
+    if (paymentType === "momo") {
+      await fetch("https://momo.vn/pay", { method: "POST", body: JSON.stringify({ total }) });
+    } else if (paymentType === "vnpay") {
+      await fetch("https://vnpay.vn/pay", { method: "POST", body: JSON.stringify({ total }) });
+    }
+
+    // 4. persist: concrete DB created inline
+    const db = new MySQLClient("mysql://...");
+    await db.query("INSERT INTO orders ...", [order.id, total]);
+
+    // 5. notify: concrete SMTP created inline
+    const smtp = new SmtpClient("smtp.gmail.com");
+    await smtp.send(order.email, "Order placed");
+  }
+}`}</Code>
+          <p>Một class làm 5 việc. Thêm ZaloPay phải sửa <code>if/else</code>. MySQL và SMTP bị <code>new</code> cứng bên trong nên không viết unit test được nếu không có DB và mail server thật.</p>
+          <h3>Bước 1 · S: tách theo trách nhiệm</h3>
+          <p>Phần nào có lý do thay đổi riêng thì tách thành class riêng. Đổi cách tính giá chỉ sửa <code>PriceCalculator</code>, đổi mẫu email chỉ sửa <code>EmailNotifier</code>.</p>
+          <Code lang="ts">{`class OrderValidator {
+  validate(order: Order) {
+    if (order.items.length === 0) throw new Error("Empty order");
+  }
+}
+
+class PriceCalculator {
+  calculate(order: Order): number {
+    return order.items.reduce((s, i) => s + i.price * i.qty, 0);
+  }
+}
+
+class MySQLOrderRepo { async save(order: Order, total: number) { /* SQL */ } }
+class EmailNotifier  { async notify(to: string, msg: string) { /* SMTP */ } }`}</Code>
+          <h3>Bước 2 · O: thay if/else bằng interface</h3>
+          <p>Mỗi cổng thanh toán là một class cùng hiện thực một interface. Thêm cổng mới chỉ cần thêm class mới, không đụng vào code đang chạy ổn.</p>
+          <Code lang="ts">{`interface PaymentGateway {
+  pay(amount: number): Promise<void>;
+}
+
+class MomoGateway  implements PaymentGateway { async pay(a: number) { /* call Momo */ } }
+class VnpayGateway implements PaymentGateway { async pay(a: number) { /* call VNPay */ } }
+// Adding ZaloPay = one new class, no existing code touched
+class ZaloGateway  implements PaymentGateway { async pay(a: number) { /* call ZaloPay */ } }
+
+// Same idea for discounts
+interface Discount { apply(total: number): number }
+class PercentDiscount implements Discount {
+  constructor(private pct: number) {}
+  apply(t: number) { return t * (1 - this.pct / 100); }
+}
+class NoDiscount implements Discount { apply(t: number) { return t; } }`}</Code>
+          <h3>Bước 3 · L: class con không được phá hợp đồng</h3>
+          <p>Thêm thanh toán khi nhận hàng (COD). Nếu <code>pay()</code> ném lỗi thì mọi chỗ đang dùng <code>PaymentGateway</code> sẽ hỏng khi nhận được COD.</p>
+          <Code lang="ts">{`// Violation: anyone holding a PaymentGateway expects pay() to succeed
+class CodGateway implements PaymentGateway {
+  async pay(amount: number) {
+    throw new Error("COD cannot pay online");
+  }
+}
+
+// Fix: keep the contract, just handle it differently
+class CodGateway implements PaymentGateway {
+  async pay(amount: number) {
+    await codLedger.record(amount); // "collect on delivery", no throw
+  }
+}`}</Code>
+          <h3>Bước 4 · I: interface nhỏ theo khả năng</h3>
+          <p>Khi cần thêm hoàn tiền và trả góp, đừng nhồi hết vào một interface. Nếu không, COD sẽ phải viết <code>refund()</code> rồi ném “not supported”, tức là lại vi phạm L.</p>
+          <Code lang="ts">{`// Too fat: not every provider supports refunds or installments
+interface PaymentGateway {
+  pay(amount: number): Promise<void>;
+  refund(txId: string): Promise<void>;
+  installment(months: number): Promise<void>;
+}
+
+// Split by capability
+interface Payable     { pay(amount: number): Promise<void> }
+interface Refundable  { refund(txId: string): Promise<void> }
+interface Installable { installment(months: number): Promise<void> }
+
+class VnpayGateway implements Payable, Refundable, Installable { /* ... */ }
+class CodGateway   implements Payable { /* only what it can do */ }`}</Code>
+          <h3>Bước 5 · D: nhận dependency qua constructor</h3>
+          <p><code>OrderService</code> chỉ biết interface. Việc chọn class cụ thể dồn về một chỗ duy nhất là composition root.</p>
+          <Code lang="ts">{`interface OrderRepo { save(order: Order, total: number): Promise<void> }
+interface Notifier  { notify(to: string, msg: string): Promise<void> }
+
+class OrderService {
+  constructor(
+    private validator: OrderValidator,
+    private calc: PriceCalculator,
+    private payment: Payable,    // Momo? VNPay? does not care
+    private repo: OrderRepo,     // MySQL? Postgres? does not care
+    private notifier: Notifier,  // email? SMS? does not care
+  ) {}
+
+  async checkout(order: Order, discount: Discount) {
+    this.validator.validate(order);
+    const total = discount.apply(this.calc.calculate(order));
+    await this.payment.pay(total);
+    await this.repo.save(order, total);
+    await this.notifier.notify(order.email, "Order placed");
+  }
+}`}</Code>
+          <p>Nhờ vậy unit test chỉ cần truyền object giả vào:</p>
+          <Code lang="ts">{`// Composition root: the only place that knows concrete classes
+const service = new OrderService(
+  new OrderValidator(),
+  new PriceCalculator(),
+  new MomoGateway(),
+  new MySQLOrderRepo(db),
+  new EmailNotifier(smtp),
+);
+
+// Unit test: pass fakes, no DB / SMTP / Momo needed
+const notify = jest.fn();
+const testService = new OrderService(
+  new OrderValidator(), new PriceCalculator(),
+  { pay: async () => {} },
+  { save: async () => {} },
+  { notify },
+);`}</Code>
+          <h3>Trước và sau</h3>
+          <div className="tbl">
+            <table>
+              <thead>
+                <tr>
+                  <th>Thay đổi</th>
+                  <th>Trước</th>
+                  <th>Sau</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><b>Thêm ZaloPay</b></td>
+                  <td>Sửa <code>if/else</code> trong <code>checkout</code></td>
+                  <td>Thêm 1 class</td>
+                </tr>
+                <tr>
+                  <td><b>MySQL → Postgres</b></td>
+                  <td>Sửa <code>OrderService</code></td>
+                  <td>Viết <code>PostgresOrderRepo</code>, đổi 1 dòng ở composition root</td>
+                </tr>
+                <tr>
+                  <td><b>Email → SMS</b></td>
+                  <td>Sửa <code>OrderService</code></td>
+                  <td>Viết <code>SmsNotifier</code></td>
+                </tr>
+                <tr>
+                  <td><b>Unit test</b></td>
+                  <td>Cần DB, SMTP, Momo thật</td>
+                  <td>Truyền fake vào constructor</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div className="note"><b>Đừng áp máy móc.</b> Script nhỏ hoặc logic chỉ có một cách làm mà tách ra 10 interface là over-engineering. Chỉ tách khi có <b>lý do thay đổi thật</b>: nhiều cổng thanh toán, cần test, cần đổi hạ tầng.</div>
+        </section>
         <section id="pr-more">
-          <h2><span className="n">07</span>Nguyên tắc khác</h2>
+          <h2><span className="n">08</span>Nguyên tắc khác</h2>
           <div className="tbl">
             <table>
               <thead>

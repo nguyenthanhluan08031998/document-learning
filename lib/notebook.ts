@@ -24,14 +24,17 @@ export const AREAS: Area[] = [
 ];
 
 export type GroupId = "api" | "messaging" | "design" | "concurrency" | "operations" | "deploy" | "git" | "db" | "ai" | "golang" | "js"
-  | "interview-fe" | "interview-be" | "interview-db" | "interview-cicd" | "interview-docker" | "interview-ai";
+  | "interview-fe" | "interview-be" | "interview-db" | "interview-devops" | "interview-ai";
 
 export interface NotebookPage {
   slug: string;
   label: string;
   labelEn?: string;
-  /** Comparison and cheat-sheet tabs are pushed to the right of the tab bar */
+  /** Comparison and cheat-sheet tabs are pushed to the right of the tab bar (listed last in the interview sidebar) */
   aside?: boolean;
+  /** Interview sidebar only: starts a sub-heading; following pages belong to it until the next one */
+  section?: string;
+  sectionEn?: string;
 }
 
 export interface NotebookGroup {
@@ -96,6 +99,7 @@ export const GROUPS: NotebookGroup[] = [
   {
     id: "concurrency", area: "be", label: "Đồng thời", hint: "lock", labelEn: "Concurrency", hintEn: "locks", tone: "conc",
     pages: [
+      { slug: "os-thread", label: "Kernel & OS thread" },
       { slug: "overview", label: "Tổng quan", labelEn: "Overview" },
       { slug: "db-lock", label: "Lock trong DB", labelEn: "Locks in the DB" },
       { slug: "distributed-lock", label: "Distributed lock" },
@@ -155,22 +159,24 @@ export const GROUPS: NotebookGroup[] = [
     ],
   },
   {
-    id: "interview-fe", area: "interview", label: "Frontend", hint: "js, react, next", labelEn: "Frontend", hintEn: "js, react, next", tone: "js",
+    id: "interview-fe", area: "interview", label: "Frontend", hint: "js, react, next, bảo mật", labelEn: "Frontend", hintEn: "js, react, next, security", tone: "js",
     pages: [
       { slug: "js-ts", label: "JS / TS" },
       { slug: "react", label: "React" },
       { slug: "next", label: "Next.js" },
+      { slug: "web-security", label: "XSS, CSRF, CORS", section: "Bảo mật", sectionEn: "Security" },
     ],
   },
   {
-    id: "interview-be", area: "interview", label: "Backend", hint: "node, nest, go, solid, http, bảo mật", labelEn: "Backend", hintEn: "node, nest, go, solid, http, security", tone: "api",
+    id: "interview-be", area: "interview", label: "Backend", hint: "node, nest, go, solid, pattern, http", labelEn: "Backend", hintEn: "node, nest, go, solid, patterns, http", tone: "api",
     pages: [
-      { slug: "nodejs", label: "Node.js" },
+      { slug: "nodejs", label: "Node.js", section: "Ngôn ngữ & framework", sectionEn: "Languages & frameworks" },
       { slug: "nestjs", label: "NestJS" },
       { slug: "go", label: "Go" },
-      { slug: "solid", label: "OOP & SOLID" },
+      { slug: "solid", label: "OOP & SOLID", section: "Thiết kế", sectionEn: "Design" },
+      { slug: "design-patterns", label: "Design Pattern", labelEn: "Design patterns" },
+      { slug: "browser-flow", label: "Gõ URL → trang hiện ra", labelEn: "Typing a URL → page", section: "Web", sectionEn: "Web" },
       { slug: "http-status", label: "HTTP status code" },
-      { slug: "web-security", label: "XSS, CSRF, CORS" },
     ],
   },
   {
@@ -180,14 +186,9 @@ export const GROUPS: NotebookGroup[] = [
     ],
   },
   {
-    id: "interview-cicd", area: "interview", label: "CI/CD", hint: "pipeline, deploy", labelEn: "CI/CD", hintEn: "pipeline, deploy", tone: "deploy",
+    id: "interview-devops", area: "interview", label: "DevOps", hint: "ci/cd, docker", labelEn: "DevOps", hintEn: "ci/cd, docker", tone: "deploy",
     pages: [
       { slug: "cicd", label: "CI/CD" },
-    ],
-  },
-  {
-    id: "interview-docker", area: "interview", label: "Docker", hint: "image, container", labelEn: "Docker", hintEn: "image, container", tone: "ops",
-    pages: [
       { slug: "docker", label: "Docker" },
     ],
   },

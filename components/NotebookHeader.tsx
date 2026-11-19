@@ -45,11 +45,12 @@ export function NotebookHeader() {
   // The interview area stays hidden until the visitor logs in
   const unlocked = useUnlocked();
   const visibleAreas = AREAS.filter(a => a.id !== "interview" || unlocked);
-  const hideActive = activeArea?.id === "interview" && !unlocked;
+  // Interview pages: hidden while locked, and once unlocked the sidebar (SiteNav) replaces the group and page rows
+  const hideActive = activeArea?.id === "interview";
   const areaGroups = activeArea && !hideActive ? groupsOf(activeArea.id) : [];
 
   return (
-    <header className="appbar">
+    <header className={hideActive ? "appbar appbar-solo" : "appbar"}>
       <div className="appbar-in">
         <div className="bar1">
           <Link href={homeHref(locale)} className="brand" style={{ color: "inherit", textDecoration: "none" }}>

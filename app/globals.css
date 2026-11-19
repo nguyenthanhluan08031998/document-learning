@@ -4,6 +4,13 @@ body { margin: 0; }
 img { max-width: 100%; }
 [hidden] { display: none !important; }
 
+/* Interview answers: one bullet per point, sub-bullets for fixes */
+.qa-points { margin: 4px 0 14px; padding-left: 20px; display: grid; gap: 10px; }
+.qa-points > li::marker { color: var(--accent); }
+.qa-points ul { margin: 6px 0 0; padding-left: 20px; display: grid; gap: 3px; }
+.qa-points ul li::marker { color: var(--muted); }
+.qa-sub-title { margin-top: 6px; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--ok); }
+
 /* Header links replace the buttons of the single-file version */
 .groups-nav a { font-family: var(--f-body); font-size: 13.5px; font-weight: 600; color: var(--muted);
   padding: 7px 14px; border-radius: 7px; display: flex; align-items: center; gap: 8px; text-decoration: none; }
@@ -109,6 +116,71 @@ p, .lede { max-width: none; }
 .lang-switch a[aria-current] { background: var(--accent-soft); color: var(--accent); }
 .lang-switch a:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 @media (max-width: 600px) { .bar1-right { width: 100%; } .bar1-right .groups-nav { flex: 1; min-width: 0; } }
+
+/* Interview area only: interview sidebar on the left, page in the middle, the page's own table of contents in a right rail */
+.appbar-solo .appbar-in { padding-bottom: 14px; }
+.shell { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 40px; }
+.shell-main { min-width: 0; }
+.shell .wrap { grid-template-columns: minmax(0, 1fr) 210px; gap: 40px; }
+.shell .wrap > main { grid-column: 1; grid-row: 1; }
+.shell .wrap > nav.toc { grid-column: 2; grid-row: 1; }
+
+.sitenav { position: sticky; top: 0; align-self: start; max-height: 100vh; overflow-y: auto; overscroll-behavior: contain;
+  padding: 24px 12px 48px 0; border-right: 1px solid var(--line); font-size: 13.5px; scrollbar-width: thin; }
+.sitenav ul { list-style: none; margin: 0; padding: 0; }
+.sitenav a { text-decoration: none; color: var(--muted); }
+.sitenav a:hover, .sitenav button:hover { color: var(--ink); }
+.sitenav a:focus-visible, .sitenav button:focus-visible, .sn-fab:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.sn-head { display: none; }
+.sn-areas { display: grid; gap: 2px; }
+.sn-row { display: flex; align-items: center; gap: 2px; }
+.sn-toggle { flex: none; width: 24px; height: 28px; display: grid; place-items: center; border: none; background: none; color: var(--muted); cursor: pointer; padding: 0; }
+.sn-chev { transition: transform .15s; }
+.sn-chev[data-open="true"] { transform: rotate(90deg); }
+.sn-area-link { flex: 1; min-width: 0; display: flex; align-items: baseline; gap: 8px; padding: 5px 8px; border-radius: 6px; font-weight: 700; color: var(--ink) !important; }
+.sn-area-link small { font-weight: 400; font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sn-area-link[aria-current="page"] { background: var(--accent-soft); }
+.sn-groups { margin: 2px 0 8px 12px !important; padding-left: 8px !important; border-left: 1px solid var(--line); display: grid; gap: 1px; }
+.sn-group { width: 100%; display: flex; align-items: center; gap: 7px; font: inherit; font-weight: 600; color: var(--muted); text-align: left;
+  background: none; border: none; padding: 5px 6px; border-radius: 6px; cursor: pointer; }
+.sn-group[data-active="true"] { color: var(--ink); }
+.sn-group .dot { flex: none; }
+.sn-pages { margin: 1px 0 6px 18px !important; display: grid; gap: 1px; }
+.sn-pages a { display: block; padding: 4px 10px; border-radius: 6px; border-left: 2px solid transparent; }
+.sn-pages a[aria-current="page"] { color: var(--ink); font-weight: 600; background: var(--accent-soft); border-left-color: var(--accent); }
+.sn-section { font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; font-weight: 700; color: var(--muted); opacity: .8; padding: 10px 10px 2px; }
+.sn-section:first-child { padding-top: 4px; }
+.sn-divider { height: 1px; background: var(--line); margin: 6px 10px; }
+.sn-fab, .sn-backdrop { display: none; }
+
+/* Medium screens: no room for the right rail, so the page TOC becomes chips above the content */
+@media (max-width: 1200px) {
+  .shell .wrap { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+  .shell .wrap > main, .shell .wrap > nav.toc { grid-column: 1; grid-row: auto; }
+  .shell .wrap > nav.toc { position: static; }
+  .shell nav.toc .label { margin-bottom: 6px; }
+  .shell nav.toc ol { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; }
+  .shell nav.toc li { flex: none; }
+  .shell nav.toc a { white-space: nowrap; background: var(--surface); border: 1px solid var(--line); border-radius: 99px; padding: 5px 12px; gap: 6px; }
+}
+
+/* Phones and tablets: the sidebar becomes a drawer opened from a floating button */
+@media (max-width: 900px) {
+  .shell { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .sitenav { position: fixed; z-index: 60; inset: 0 auto 0 0; width: min(310px, 86vw); max-height: none; background: var(--surface);
+    padding: 0 12px 48px 8px; padding-left: max(8px, env(safe-area-inset-left, 0px)); box-shadow: 0 0 24px rgba(0, 0, 0, .2);
+    transform: translateX(-105%); transition: transform .2s; visibility: hidden; }
+  .sitenav[data-open="true"] { transform: none; visibility: visible; }
+  .sn-head { display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: var(--surface);
+    padding: 14px 4px 10px 8px; margin-bottom: 6px; border-bottom: 1px solid var(--line); font-weight: 700; z-index: 1; }
+  .sn-close { font-size: 22px; line-height: 1; width: 36px; height: 36px; border: none; background: none; color: var(--muted); cursor: pointer; border-radius: 8px; }
+  .sn-backdrop { display: block; position: fixed; inset: 0; z-index: 55; background: rgba(0, 0, 0, .4); }
+  .sn-fab { display: flex; align-items: center; gap: 8px; position: fixed; z-index: 50; left: max(16px, env(safe-area-inset-left, 0px));
+    bottom: calc(16px + env(safe-area-inset-bottom, 0px)); font: inherit; font-size: 13.5px; font-weight: 700; color: var(--bg);
+    background: var(--ink); border: none; border-radius: 99px; padding: 10px 16px; box-shadow: 0 4px 14px rgba(0, 0, 0, .25); cursor: pointer; }
+  .sn-pages a, .sn-group, .sn-area-link { padding-block: 8px; }
+}
+@media (prefers-reduced-motion: reduce) { .sitenav, .sn-chev { transition: none; } }
 
 /* Login gate in front of the interview pages */
 .iv-login { max-width: 380px; margin: 48px auto; padding: 28px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; display: grid; gap: 14px; }

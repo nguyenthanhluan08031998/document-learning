@@ -12,7 +12,8 @@ export default function PrinciplesPage() {
           <li><a href="#pr-lsp"><span>04</span>L · Liskov Substitution</a></li>
           <li><a href="#pr-isp"><span>05</span>I · Interface Segregation</a></li>
           <li><a href="#pr-dip"><span>06</span>D · Dependency Inversion</a></li>
-          <li><a href="#pr-more"><span>07</span>Other principles</a></li>
+          <li><a href="#pr-refactor"><span>07</span>Step-by-step refactor</a></li>
+          <li><a href="#pr-more"><span>08</span>Other principles</a></li>
         </ol>
       </nav>
       <main>
@@ -129,8 +130,179 @@ class PlaceOrder {
 class StripePayment implements PaymentPort { async charge() { return "ch_123"; } }
 const useCase = new PlaceOrder(new StripePayment());`}</Code>
         </section>
+        <section id="pr-refactor">
+          <h2><span className="n">07</span>Step-by-step refactor: OrderService</h2>
+          <p>Apply all five principles to <b>one</b> real piece of code to see how they work together. The starting point is an order checkout service written in “just make it work” style.</p>
+          <h3>Starting code</h3>
+          <Code lang="ts">{`class OrderService {
+  async checkout(order: Order, paymentType: string) {
+    // 1. validate
+    if (order.items.length === 0) throw new Error("Empty order");
+
+    // 2. price + discount
+    let total = order.items.reduce((s, i) => s + i.price * i.qty, 0);
+    if (order.coupon === "SALE10") total *= 0.9;
+
+    // 3. payment: a new provider means another else-if
+    if (paymentType === "momo") {
+      await fetch("https://momo.vn/pay", { method: "POST", body: JSON.stringify({ total }) });
+    } else if (paymentType === "vnpay") {
+      await fetch("https://vnpay.vn/pay", { method: "POST", body: JSON.stringify({ total }) });
+    }
+
+    // 4. persist: concrete DB created inline
+    const db = new MySQLClient("mysql://...");
+    await db.query("INSERT INTO orders ...", [order.id, total]);
+
+    // 5. notify: concrete SMTP created inline
+    const smtp = new SmtpClient("smtp.gmail.com");
+    await smtp.send(order.email, "Order placed");
+  }
+}`}</Code>
+          <p>One class does five jobs. Adding ZaloPay means editing the <code>if/else</code>. MySQL and SMTP are created with <code>new</code> inline, so there is no unit test without a real DB and mail server.</p>
+          <h3>Step 1 · S: split by responsibility</h3>
+          <p>Each part that changes for its own reason gets its own class. Changing pricing touches only <code>PriceCalculator</code>; changing the email template touches only <code>EmailNotifier</code>.</p>
+          <Code lang="ts">{`class OrderValidator {
+  validate(order: Order) {
+    if (order.items.length === 0) throw new Error("Empty order");
+  }
+}
+
+class PriceCalculator {
+  calculate(order: Order): number {
+    return order.items.reduce((s, i) => s + i.price * i.qty, 0);
+  }
+}
+
+class MySQLOrderRepo { async save(order: Order, total: number) { /* SQL */ } }
+class EmailNotifier  { async notify(to: string, msg: string) { /* SMTP */ } }`}</Code>
+          <h3>Step 2 · O: replace if/else with an interface</h3>
+          <p>Each payment provider is a class implementing one interface. A new provider is a new class; working code stays untouched.</p>
+          <Code lang="ts">{`interface PaymentGateway {
+  pay(amount: number): Promise<void>;
+}
+
+class MomoGateway  implements PaymentGateway { async pay(a: number) { /* call Momo */ } }
+class VnpayGateway implements PaymentGateway { async pay(a: number) { /* call VNPay */ } }
+// Adding ZaloPay = one new class, no existing code touched
+class ZaloGateway  implements PaymentGateway { async pay(a: number) { /* call ZaloPay */ } }
+
+// Same idea for discounts
+interface Discount { apply(total: number): number }
+class PercentDiscount implements Discount {
+  constructor(private pct: number) {}
+  apply(t: number) { return t * (1 - this.pct / 100); }
+}
+class NoDiscount implements Discount { apply(t: number) { return t; } }`}</Code>
+          <h3>Step 3 · L: subclasses must keep the contract</h3>
+          <p>Now add cash on delivery (COD). If its <code>pay()</code> throws, every caller relying on <code>PaymentGateway</code> breaks when handed COD.</p>
+          <Code lang="ts">{`// Violation: anyone holding a PaymentGateway expects pay() to succeed
+class CodGateway implements PaymentGateway {
+  async pay(amount: number) {
+    throw new Error("COD cannot pay online");
+  }
+}
+
+// Fix: keep the contract, just handle it differently
+class CodGateway implements PaymentGateway {
+  async pay(amount: number) {
+    await codLedger.record(amount); // "collect on delivery", no throw
+  }
+}`}</Code>
+          <h3>Step 4 · I: small interfaces per capability</h3>
+          <p>When refunds and installments arrive, do not cram them into one interface. Otherwise COD has to implement <code>refund()</code> and throw “not supported”, which breaks L again.</p>
+          <Code lang="ts">{`// Too fat: not every provider supports refunds or installments
+interface PaymentGateway {
+  pay(amount: number): Promise<void>;
+  refund(txId: string): Promise<void>;
+  installment(months: number): Promise<void>;
+}
+
+// Split by capability
+interface Payable     { pay(amount: number): Promise<void> }
+interface Refundable  { refund(txId: string): Promise<void> }
+interface Installable { installment(months: number): Promise<void> }
+
+class VnpayGateway implements Payable, Refundable, Installable { /* ... */ }
+class CodGateway   implements Payable { /* only what it can do */ }`}</Code>
+          <h3>Step 5 · D: receive dependencies through the constructor</h3>
+          <p><code>OrderService</code> only knows interfaces. Choosing concrete classes moves to a single place: the composition root.</p>
+          <Code lang="ts">{`interface OrderRepo { save(order: Order, total: number): Promise<void> }
+interface Notifier  { notify(to: string, msg: string): Promise<void> }
+
+class OrderService {
+  constructor(
+    private validator: OrderValidator,
+    private calc: PriceCalculator,
+    private payment: Payable,    // Momo? VNPay? does not care
+    private repo: OrderRepo,     // MySQL? Postgres? does not care
+    private notifier: Notifier,  // email? SMS? does not care
+  ) {}
+
+  async checkout(order: Order, discount: Discount) {
+    this.validator.validate(order);
+    const total = discount.apply(this.calc.calculate(order));
+    await this.payment.pay(total);
+    await this.repo.save(order, total);
+    await this.notifier.notify(order.email, "Order placed");
+  }
+}`}</Code>
+          <p>Which makes unit tests a matter of passing fakes:</p>
+          <Code lang="ts">{`// Composition root: the only place that knows concrete classes
+const service = new OrderService(
+  new OrderValidator(),
+  new PriceCalculator(),
+  new MomoGateway(),
+  new MySQLOrderRepo(db),
+  new EmailNotifier(smtp),
+);
+
+// Unit test: pass fakes, no DB / SMTP / Momo needed
+const notify = jest.fn();
+const testService = new OrderService(
+  new OrderValidator(), new PriceCalculator(),
+  { pay: async () => {} },
+  { save: async () => {} },
+  { notify },
+);`}</Code>
+          <h3>Before and after</h3>
+          <div className="tbl">
+            <table>
+              <thead>
+                <tr>
+                  <th>Change</th>
+                  <th>Before</th>
+                  <th>After</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><b>Add ZaloPay</b></td>
+                  <td>Edit the <code>if/else</code> in <code>checkout</code></td>
+                  <td>Add 1 class</td>
+                </tr>
+                <tr>
+                  <td><b>MySQL → Postgres</b></td>
+                  <td>Edit <code>OrderService</code></td>
+                  <td>Write <code>PostgresOrderRepo</code>, change 1 line in the composition root</td>
+                </tr>
+                <tr>
+                  <td><b>Email → SMS</b></td>
+                  <td>Edit <code>OrderService</code></td>
+                  <td>Write <code>SmsNotifier</code></td>
+                </tr>
+                <tr>
+                  <td><b>Unit test</b></td>
+                  <td>Needs a real DB, SMTP, Momo</td>
+                  <td>Pass fakes to the constructor</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div className="note"><b>Do not apply it mechanically.</b> Splitting a small script or single-implementation logic into ten interfaces is over-engineering. Split only when there is a <b>real reason to change</b>: several payment providers, tests, swappable infrastructure.</div>
+        </section>
         <section id="pr-more">
-          <h2><span className="n">07</span>Other principles</h2>
+          <h2><span className="n">08</span>Other principles</h2>
           <div className="tbl">
             <table>
               <thead>

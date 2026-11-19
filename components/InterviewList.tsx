@@ -10,6 +10,12 @@ export interface Item {
   q: string;
   /** Answer: one string, or several paragraphs */
   a: string | string[];
+  /** Optional bullet list after the answer: one bullet per point, with optional sub-bullets (e.g. fixes) */
+  points?: { title: string; body?: string; subTitle?: string; sub?: string[] }[];
+  /** Optional comparison table, shown after the answer; the first column is bold */
+  table?: { head: string[]; rows: string[][] };
+  /** Optional highlighted takeaway, shown after the table */
+  note?: string;
   /** Optional diagram, e.g. <Flow/> */
   diagram?: ReactNode;
   /** Optional worked example(s) */
@@ -18,22 +24,32 @@ export interface Item {
   label: string;
 }
 
-export interface InterviewData { eyebrow: string; title: string; lede: string; items: Item[] }
+/** A titled group of questions; gets its own TOC entry */
+export interface Section { id: string; title: string; lede?: string; items: Item[] }
+
+/** Pass either a flat `items` list or grouped `sections` */
+export interface InterviewData { eyebrow: string; title: string; lede: string; items?: Item[]; sections?: Section[] }
 
 const T = {
   vi: { toc: "Mục lục", section: "Câu hỏi thường gặp", diagram: "sơ đồ", example: "ví dụ", exTitle: "Ví dụ", src: "Tài liệu chính thức", open: "Mở tất cả", close: "Đóng tất cả" },
   en: { toc: "Contents", section: "Common questions", diagram: "diagram", example: "example", exTitle: "Example", src: "Official docs", open: "Expand all", close: "Collapse all" },
 };
 
-export function InterviewList({ locale, eyebrow, title, lede, items }: { locale: Locale } & InterviewData) {
+export function InterviewList({ locale, eyebrow, title, lede, items, sections }: { locale: Locale } & InterviewData) {
   const t = T[locale];
+  const groups: Section[] = sections ?? [{ id: "iv-qa", title: t.section, items: items ?? [] }];
+  // Question numbers run on across sections
+  const offsets = groups.map((_, g) => groups.slice(0, g).reduce((n, s) => n + s.items.length, 0));
+  const pad = (n: number) => String(n).padStart(2, "0");
   return (
     <InterviewGate locale={locale}>
     <div className="wrap">
       <nav className="toc" aria-label={title}>
         <div className="label">{t.toc}</div>
         <ol>
-          <li><a href="#iv-qa"><span>01</span>{t.section}</a></li>
+          {groups.map((s, g) => (
+            <li key={s.id}><a href={`#${s.id}`}><span>{pad(g + 1)}</span>{s.title}</a></li>
+          ))}
         </ol>
       </nav>
       <main>
@@ -43,16 +59,18 @@ export function InterviewList({ locale, eyebrow, title, lede, items }: { locale:
           <p className="lede">{lede}</p>
         </header>
 
-        <section id="iv-qa">
-          <h2><span className="n">01</span>{t.section}</h2>
-          <ExpandAll open={t.open} close={t.close} />
+        {groups.map((s, g) => (
+        <section id={s.id} key={s.id}>
+          <h2><span className="n">{pad(g + 1)}</span>{s.title}</h2>
+          {s.lede && <p>{s.lede}</p>}
+          {g === 0 && <ExpandAll open={t.open} close={t.close} />}
           <div className="qa-list">
-            {items.map((it, i) => {
+            {s.items.map((it, i) => {
               const samples = it.code ? (Array.isArray(it.code) ? it.code : [it.code]) : [];
               return (
                 <details className="qa" key={it.q}>
                   <summary>
-                    <span className="qn">{String(i + 1).padStart(2, "0")}</span>
+                    <span className="qn">{pad(offsets[g] + i + 1)}</span>
                     <span className="qt">
                       {it.q}
                       {it.diagram && <span className="tag">{t.diagram}</span>}
@@ -61,6 +79,34 @@ export function InterviewList({ locale, eyebrow, title, lede, items }: { locale:
                   </summary>
                   <div className="qa-body">
                     {(Array.isArray(it.a) ? it.a : [it.a]).map((p) => <p key={p}>{p}</p>)}
+                    {it.points && (
+                      <ul className="qa-points">
+                        {it.points.map(pt => (
+                          <li key={pt.title}>
+                            <b>{pt.title}</b>{pt.body && <>: {pt.body}</>}
+                            {pt.sub && pt.sub.length > 0 && (
+                              <>
+                                {pt.subTitle && <div className="qa-sub-title">{pt.subTitle}</div>}
+                                <ul>{pt.sub.map(s => <li key={s}>{s}</li>)}</ul>
+                              </>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    {it.table && (
+                      <div className="tbl">
+                        <table>
+                          <thead><tr>{it.table.head.map(h => <th key={h}>{h}</th>)}</tr></thead>
+                          <tbody>
+                            {it.table.rows.map(r => (
+                              <tr key={r[0]}>{r.map((c, k) => <td key={k}>{k === 0 ? <b>{c}</b> : c}</td>)}</tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                    {it.note && <div className="note tip">{it.note}</div>}
                     {it.diagram}
                     {samples.length > 0 && <div className="qa-label">{t.exTitle}</div>}
                     {samples.map((s, k) => <Code key={k} lang={s.lang}>{s.src}</Code>)}
@@ -71,6 +117,7 @@ export function InterviewList({ locale, eyebrow, title, lede, items }: { locale:
             })}
           </div>
         </section>
+        ))}
       </main>
     </div>
     </InterviewGate>

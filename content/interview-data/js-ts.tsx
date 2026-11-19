@@ -304,17 +304,83 @@ function debounce(fn, ms) {
       },
       {
         q: t("var, let, const khác nhau?", "var vs let vs const?"),
-        a: t(
-          "var có phạm vi hàm; let và const có phạm vi khối và mỗi vòng lặp tạo một binding mới. Vì vậy closure trong vòng for dùng var thấy chung một biến (lỗi kinh điển). const cấm gán lại, không làm object bất biến.",
-          "var is function-scoped; let and const are block-scoped and each loop iteration gets a fresh binding. That is why closures in a for loop with var share one variable (the classic bug). const forbids reassignment; it does not make objects immutable.",
+        a: [
+          t(
+            "Ba từ khoá khác nhau ở 5 điểm: phạm vi (scope), hoisting, có được khai báo lại không, có được gán lại không, và cách hoạt động trong vòng lặp. var là cách cũ (trước ES6, 2015); let và const ra đời để sửa những chỗ dễ gây bug của var.",
+            "The three keywords differ in 5 ways: scope, hoisting, redeclaration, reassignment, and loop behavior. var is the old way (pre-ES6, 2015); let and const were added to fix var's bug-prone parts.",
+          ),
+          t(
+            "Scope: var có phạm vi hàm, nên khai báo trong if hay for vẫn lọt ra ngoài khối đó. let và const có phạm vi khối, chỉ sống trong cặp { } gần nhất.",
+            "Scope: var is function-scoped, so declaring it inside an if or for leaks out of that block. let and const are block-scoped and live only inside the nearest { }.",
+          ),
+          t(
+            "Hoisting: cả ba đều được hoist (engine biết tên biến từ đầu scope), nhưng khác ở giá trị ban đầu. var được khởi tạo sẵn là undefined, nên đọc trước dòng khai báo không lỗi mà ra undefined, rất khó phát hiện bug. let và const nằm trong Temporal Dead Zone (TDZ) từ đầu khối tới dòng khai báo; đọc trong khoảng đó ném ReferenceError.",
+            "Hoisting: all three are hoisted (the engine knows the name from the start of the scope), but the initial value differs. var starts as undefined, so reading it before the declaration silently gives undefined, which hides bugs. let and const sit in the Temporal Dead Zone (TDZ) from the start of the block to the declaration; reading them there throws ReferenceError.",
+          ),
+          t(
+            "Vòng lặp: for với var chỉ có một biến dùng chung cho mọi vòng, nên các callback (setTimeout, event handler) đều thấy giá trị cuối. for với let tạo một binding mới cho mỗi vòng, nên mỗi callback giữ giá trị riêng.",
+            "Loops: a for loop with var has one shared variable for every iteration, so callbacks (setTimeout, event handlers) all see the final value. A for loop with let creates a fresh binding per iteration, so each callback keeps its own value.",
+          ),
+          t(
+            "const chỉ cấm gán lại biến, không làm object hay mảng bất biến: vẫn sửa được thuộc tính, vẫn push được. Muốn bất biến thật thì dùng Object.freeze (nông) hoặc readonly / as const trong TypeScript (chỉ kiểm tra lúc compile).",
+            "const only forbids reassigning the binding; it does not make objects or arrays immutable: you can still change properties or push. For real immutability use Object.freeze (shallow) or readonly / as const in TypeScript (compile-time only).",
+          ),
+        ],
+        table: {
+          head: ["", "var", "let", "const"],
+          rows: [
+            [t("Phạm vi", "Scope"), t("Hàm", "Function"), t("Khối { }", "Block { }"), t("Khối { }", "Block { }")],
+            [t("Hoisting", "Hoisting"), t("Có, giá trị undefined", "Yes, as undefined"), t("Có, nhưng nằm trong TDZ", "Yes, but in the TDZ"), t("Có, nhưng nằm trong TDZ", "Yes, but in the TDZ")],
+            [t("Dùng trước khai báo", "Use before declaring"), "undefined", "ReferenceError", "ReferenceError"],
+            [t("Khai báo lại cùng scope", "Redeclare in same scope"), t("Được", "Allowed"), "SyntaxError", "SyntaxError"],
+            [t("Gán lại", "Reassign"), t("Được", "Allowed"), t("Được", "Allowed"), "TypeError"],
+            [t("Bắt buộc gán khi khai báo", "Must initialize"), t("Không", "No"), t("Không", "No"), t("Có", "Yes")],
+            [t("Ở top-level script, thành thuộc tính window", "Top-level script: becomes a window property"), t("Có", "Yes"), t("Không", "No"), t("Không", "No")],
+            [t("Vòng for + closure", "for loop + closure"), t("Một biến chung", "One shared variable"), t("Binding mới mỗi vòng", "Fresh binding per iteration"), t("Dùng được trong for...of", "Works in for...of")],
+          ],
+        },
+        note: t(
+          "Quy tắc dùng: mặc định dùng const; dùng let khi thật sự cần gán lại (bộ đếm, biến tích luỹ); không dùng var trong code mới. ESLint có rule no-var và prefer-const để tự kiểm tra.",
+          "Rule of thumb: use const by default; use let only when you really reassign (counters, accumulators); never use var in new code. ESLint's no-var and prefer-const rules enforce this.",
         ),
-        code: { lang: "js", src: `for (var i = 0; i < 3; i++) setTimeout(() => console.log(i)); // 3 3 3
-for (let j = 0; j < 3; j++) setTimeout(() => console.log(j)); // 0 1 2
+        code: [
+          { lang: "js", src: `// 1. ${t("Scope: var lọt ra khỏi khối", "Scope: var leaks out of the block")}
+if (true) {
+  var a = 1;
+  let b = 2;
+}
+console.log(a);   // 1
+console.log(b);   // ReferenceError: b is not defined` },
+          { lang: "js", src: `// 2. ${t("Hoisting và TDZ", "Hoisting and the TDZ")}
+console.log(x);   // undefined   ← ${t("var: không lỗi, bug bị giấu", "var: no error, the bug is hidden")}
+var x = 5;
 
-const user = { name: "A" };
-user.name = "B";   // ${t("được: chỉ binding là hằng", "allowed: only the binding is constant")}
-// user = {};      // TypeError` },
-        href: CLOSURES, label: "Closures (MDN)",
+console.log(y);   // ReferenceError: Cannot access 'y' before initialization
+let y = 5;        // ${t("từ đầu khối tới đây là TDZ", "TDZ from the start of the block to here")}` },
+          { lang: "js", src: `// 3. ${t("Khai báo lại", "Redeclaration")}
+var total = 1;
+var total = 2;    // ${t("được, vô tình ghi đè biến cũ", "allowed, silently overwrites")}
+
+let count = 1;
+let count = 2;    // SyntaxError: Identifier 'count' has already been declared` },
+          { lang: "js", src: `// 4. ${t("Vòng lặp + closure: lỗi kinh điển", "Loop + closure: the classic bug")}
+for (var i = 0; i < 3; i++) setTimeout(() => console.log(i));   // 3 3 3
+for (let j = 0; j < 3; j++) setTimeout(() => console.log(j));   // 0 1 2
+
+// ${t("Cách sửa thời chưa có let: IIFE tạo scope riêng cho mỗi vòng", "Pre-let fix: an IIFE gives each iteration its own scope")}
+for (var k = 0; k < 3; k++) ((k) => setTimeout(() => console.log(k)))(k);   // 0 1 2` },
+          { lang: "ts", src: `// 5. ${t("const không làm object bất biến", "const does not make objects immutable")}
+const cart = { items: [] as string[] };
+cart.items.push("tshirt");   // ${t("được", "allowed")}
+cart.items = [];             // ${t("được: đổi thuộc tính, không đổi binding", "allowed: a property, not the binding")}
+// cart = { items: [] };     // TypeError: Assignment to constant variable
+
+const frozen = Object.freeze({ qty: 1 });
+// frozen.qty = 2;           // ${t("strict mode: TypeError; TS: lỗi compile", "strict mode: TypeError; TS: compile error")}
+
+const ROLES = ["admin", "user"] as const;   // TS: readonly ["admin", "user"]` },
+        ],
+        href: "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/let", label: "let (MDN)",
       },
       {
         q: t("this được xác định thế nào?", "How is this determined?"),
@@ -441,6 +507,79 @@ interface Bear extends Animal { honey: boolean }
 type ID = number | string;                // ${t("chỉ type làm được", "only type can do this")}
 type Cat = Animal & { lives: number };    // ${t("mở rộng bằng intersection", "extend with an intersection")}` },
         href: EVERYDAY, label: "Everyday types",
+      },
+      {
+        q: t("Union type là gì? Khác intersection type thế nào?", "What is a union type? How does it differ from an intersection type?"),
+        a: [
+          t(
+            "Union A | B nghĩa là giá trị là A hoặc B (một trong các kiểu). Ví dụ id: string | number, status: \"pending\" | \"paid\" | \"shipped\". Vì TypeScript không biết lúc chạy giá trị đang là kiểu nào, bạn chỉ dùng được những thứ chung cho mọi thành viên; muốn dùng phần riêng thì phải thu hẹp kiểu (narrowing) bằng typeof, in, instanceof hoặc một trường phân biệt.",
+            "A union A | B means the value is A or B (one of the types). Examples: id: string | number, status: \"pending\" | \"paid\" | \"shipped\". Since TypeScript cannot know at runtime which member it holds, you can only use what all members share; to use member-specific parts you must narrow with typeof, in, instanceof or a discriminant field.",
+          ),
+          t(
+            "Intersection A & B nghĩa là giá trị vừa là A vừa là B, có đủ thuộc tính của cả hai. Hay dùng để ghép kiểu: User & { roles: string[] }. Ghép hai kiểu nguyên thuỷ mâu thuẫn như string & number thì ra never.",
+            "An intersection A & B means the value is both A and B, with every property of each. It is used to combine types: User & { roles: string[] }. Intersecting conflicting primitives such as string & number gives never.",
+          ),
+          t(
+            "Discriminated union (tagged union) là dạng dùng nhiều nhất: mỗi thành viên có một trường literal chung (type, kind, status). Kiểm tra trường đó trong if hoặc switch là TypeScript tự thu hẹp đúng kiểu. Thêm nhánh default gán vào never (exhaustive check) để khi ai đó thêm thành viên mới mà quên xử lý, code báo lỗi ngay lúc compile.",
+            "The discriminated (tagged) union is the most useful form: every member shares a literal field (type, kind, status). Checking that field in an if or switch narrows to the right member automatically. A default branch assigned to never (exhaustive check) makes the compiler fail when someone adds a member and forgets to handle it.",
+          ),
+        ],
+        table: {
+          head: ["", "Union  A | B", "Intersection  A & B"],
+          rows: [
+            [t("Nghĩa", "Meaning"), t("A hoặc B", "A or B"), t("Vừa A vừa B", "Both A and B")],
+            [t("Dùng được thuộc tính", "Usable properties"), t("Chỉ phần chung, còn lại phải narrowing", "Only shared ones; narrow for the rest"), t("Tất cả thuộc tính của A và B", "All properties of A and B")],
+            [t("Tập giá trị", "Set of values"), t("Rộng hơn (gộp lại)", "Wider (combined)"), t("Hẹp hơn (phần giao)", "Narrower (the overlap)")],
+            [t("Dùng khi", "Use for"), t("Nhiều trạng thái, nhiều dạng dữ liệu, giá trị có thể null", "Several states or shapes, nullable values"), t("Ghép, mở rộng kiểu object", "Combining or extending object types")],
+            [t("Ví dụ", "Example"), '"paid" | "shipped", string | null', "User & { roles: string[] }"],
+          ],
+        },
+        note: t(
+          "Literal union (\"pending\" | \"paid\") thường được ưu tiên hơn enum: không sinh code JS, gợi ý tự động tốt, và khớp thẳng với chuỗi trong JSON từ API.",
+          "Literal unions (\"pending\" | \"paid\") are usually preferred over enums: no generated JS, good autocomplete, and they match API JSON strings directly.",
+        ),
+        code: [
+          { lang: "ts", src: `// ${t("Union cơ bản: chỉ dùng được phần chung", "Basic union: only shared members are usable")}
+function formatId(id: string | number) {
+  // id.toUpperCase();          // ${t("lỗi: number không có toUpperCase", "error: number has no toUpperCase")}
+  if (typeof id === "string") return id.toUpperCase();   // id: string
+  return id.toFixed(0);                                   // id: number
+}
+
+type OrderStatus = "pending" | "paid" | "shipped" | "cancelled";   // literal union
+let s: OrderStatus = "paid";
+// s = "done";                  // ${t("lỗi: không thuộc union", "error: not in the union")}` },
+          { lang: "ts", src: `// ${t("Discriminated union + exhaustive check", "Discriminated union + exhaustive check")}
+type Payment =
+  | { method: "card"; cardLast4: string }
+  | { method: "momo"; phone: string }
+  | { method: "cod" };
+
+function describe(p: Payment): string {
+  switch (p.method) {
+    case "card": return "Card ****" + p.cardLast4;   // p: card
+    case "momo": return "Momo " + p.phone;           // p: momo
+    case "cod":  return "Cash on delivery";
+    default: {
+      const never: never = p;   // ${t("thêm \"zalopay\" mà quên case → lỗi compile ở đây", "add \"zalopay\" without a case → compile error here")}
+      return never;
+    }
+  }
+}` },
+          { lang: "ts", src: `// ${t("Union cho kết quả API: bắt buộc kiểm tra lỗi trước khi dùng data", "Union for API results: you must check for errors before using data")}
+type Result<T> =
+  | { ok: true; data: T }
+  | { ok: false; error: string };
+
+const r: Result<User> = await getUser(id);
+if (!r.ok) return showError(r.error);
+console.log(r.data.name);       // r: { ok: true; data: User }
+
+// Intersection: ${t("ghép thêm thuộc tính", "add properties")}
+type AdminUser = User & { roles: string[] };
+type Impossible = string & number;   // never` },
+        ],
+        href: "https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#union-types", label: "Union types (TypeScript)",
       },
       {
         q: t("Thu hẹp kiểu (narrowing) có những cách nào?", "Which narrowing techniques exist?"),
