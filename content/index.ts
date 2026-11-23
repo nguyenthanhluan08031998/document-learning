@@ -140,7 +140,7 @@ export const PAGES: Record<string, ComponentType> = {
   "interview-be/browser-flow": interviewBrowserFlow,
   "interview-fe/web-security": interviewWebSecurity,
   "interview-devops/docker": deployDockerInterview,
-  "interview-be/kafka": interviewKafka,
+  "interview-messaging/kafka": interviewKafka,
   "interview-fe/js-ts": interviewJsTs,
   "interview-be/nodejs": interviewNodejs,
   "interview-fe/react": interviewReact,
