@@ -19,6 +19,7 @@ import interviewAi from "./interview/ai";
 import interviewHttpStatus from "./interview/http-status";
 import interviewBrowserFlow from "./interview/browser-flow";
 import interviewWebSecurity from "./interview/web-security";
+import interviewKafka from "./interview/kafka";
 import deployDockerInterview from "./deploy/docker-interview";
 import jsAsync from "./js/async";
 import jsCore from "./js/core";
@@ -139,6 +140,7 @@ export const PAGES: Record<string, ComponentType> = {
   "interview-be/browser-flow": interviewBrowserFlow,
   "interview-fe/web-security": interviewWebSecurity,
   "interview-devops/docker": deployDockerInterview,
+  "interview-be/kafka": interviewKafka,
   "interview-fe/js-ts": interviewJsTs,
   "interview-be/nodejs": interviewNodejs,
   "interview-fe/react": interviewReact,

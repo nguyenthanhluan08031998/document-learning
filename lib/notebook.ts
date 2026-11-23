@@ -168,7 +168,7 @@ export const GROUPS: NotebookGroup[] = [
     ],
   },
   {
-    id: "interview-be", area: "interview", label: "Backend", hint: "node, nest, go, solid, pattern, http", labelEn: "Backend", hintEn: "node, nest, go, solid, patterns, http", tone: "api",
+    id: "interview-be", area: "interview", label: "Backend", hint: "node, nest, go, solid, pattern, http, kafka", labelEn: "Backend", hintEn: "node, nest, go, solid, patterns, http, kafka", tone: "api",
     pages: [
       { slug: "nodejs", label: "Node.js", section: "Ngôn ngữ & framework", sectionEn: "Languages & frameworks" },
       { slug: "nestjs", label: "NestJS" },
@@ -177,6 +177,7 @@ export const GROUPS: NotebookGroup[] = [
       { slug: "design-patterns", label: "Design Pattern", labelEn: "Design patterns" },
       { slug: "browser-flow", label: "Gõ URL → trang hiện ra", labelEn: "Typing a URL → page", section: "Web", sectionEn: "Web" },
       { slug: "http-status", label: "HTTP status code" },
+      { slug: "kafka", label: "Kafka", section: "Messaging", sectionEn: "Messaging" },
     ],
   },
   {
