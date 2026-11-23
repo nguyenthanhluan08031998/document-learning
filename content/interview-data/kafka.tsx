@@ -27,10 +27,20 @@ export default function build(l: Locale): InterviewData {
           "ISR, min.insync.replicas và “committed” liên hệ thế nào?",
           "How do ISR, min.insync.replicas and “committed” relate?",
         ),
-        a: t(
-          "ISR (In-Sync Replicas) là tập replica đang bắt kịp leader. High Watermark = LEO nhỏ nhất trong ISR; message dưới HW mới được coi là committed và consumer mới đọc được. min.insync.replicas chỉ có tác dụng khi acks=all: nếu số replica trong ISR nhỏ hơn giá trị này, producer nhận lỗi NotEnoughReplicas thay vì ghi mà không đủ an toàn.",
-          "ISR (In-Sync Replicas) is the set of replicas keeping up with the leader. The High Watermark = the smallest LEO among the ISR; only messages below the HW are committed and visible to consumers. min.insync.replicas only matters with acks=all: if the ISR shrinks below that value, the producer gets NotEnoughReplicas instead of an unsafely accepted write.",
-        ),
+        a: [
+          t(
+            "ISR (In-Sync Replicas) là các replica đang bắt kịp leader, kể cả leader. Ví dụ: Leader, Follower A, Follower B đều đồng bộ bình thường → ISR có 3 replica. Nếu Follower B tụt lại quá replica.lag.time.max.ms (mặc định 30 giây), B bị loại khỏi ISR → ISR chỉ còn 2 (Leader, A).",
+            "ISR (In-Sync Replicas) is the set of replicas keeping up with the leader, the leader included. Example: Leader, Follower A and Follower B are all caught up → the ISR has 3 replicas. If Follower B falls behind past replica.lag.time.max.ms (30 seconds by default), B is dropped from the ISR → it shrinks to 2 (Leader, A).",
+          ),
+          t(
+            "High Watermark (HW) = LEO (Log End Offset) nhỏ nhất trong các replica thuộc ISR. Ví dụ leader đã ghi tới offset 105, follower A mới ghi tới 103 → HW = min(105, 103) = 103. Chỉ message có offset ≤ HW mới được coi là committed; consumer chỉ đọc được tới đó, chưa thấy offset 104, 105 vì nếu leader chết ngay lúc này thì hai message đó có thể chưa kịp sao chép.",
+            "High Watermark (HW) = the smallest LEO (Log End Offset) among the replicas in the ISR. Example: the leader has written up to offset 105, follower A only up to 103 → HW = min(105, 103) = 103. Only messages at or below the HW count as committed; a consumer can only read up to there, not yet offsets 104 or 105, since those could be lost if the leader died right now.",
+          ),
+          t(
+            "min.insync.replicas chỉ có tác dụng khi producer dùng acks=all. Ví dụ đặt min.insync.replicas=2: ISR còn ≥ 2 replica thì ghi bình thường; nếu ISR tụt xuống còn 1 (các follower đều rớt), Kafka từ chối ghi luôn, trả lỗi NotEnoughReplicas cho producer thay vì chấp nhận ghi liều chỉ trên một mình leader.",
+            "min.insync.replicas only matters when the producer uses acks=all. Example with min.insync.replicas=2: as long as the ISR has 2 or more replicas, writes go through as normal; if the ISR drops to 1 (every follower fell behind), Kafka rejects the write outright with NotEnoughReplicas instead of accepting it unsafely on the leader alone.",
+          ),
+        ],
         code: { lang: "properties", src: `acks=all
 min.insync.replicas=2
 replication.factor=3   # ${t("chịu được 1 broker chết mà vẫn ghi được", "tolerates 1 broker down and still accepts writes")}` },
